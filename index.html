@@ -218,7 +218,9 @@
 
     function unlock() {
         triggerVibrate();
-        const pass = document.getElementById('pass-input').value;
+        const inputField = document.getElementById('pass-input');
+        let pass = inputField.value.trim().replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+        
         if(pass === "1212") {
             document.getElementById('lock-screen').style.opacity = "0";
             setTimeout(() => {
@@ -230,6 +232,7 @@
         } else {
             const box = document.getElementById('lock-box');
             box.style.animation = 'shake 0.3s ease';
+            inputField.value = "";
             setTimeout(() => box.style.animation = '', 300);
         }
     }
@@ -374,7 +377,6 @@
         }
     }
 
-    // هنا شلنا الـ limitToLast عشان يقرأ كل الرسايل
     db.ref('msgs').on('child_added', snap => {
         const d = snap.val();
         const div = document.createElement('div');
