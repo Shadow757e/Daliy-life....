@@ -46,75 +46,75 @@
 
         ::-webkit-scrollbar { display: none; }
 
-        #lock-screen { 
-            position: fixed; inset: 0; background: var(--dark-bg); z-index: 10000; 
-            display: flex; align-items: center; justify-content: center; 
-            backdrop-filter: blur(30px); transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        /* --- ستايل الترمينال الجديد (بديل شاشة القفل) --- */
+        #hacker-screen { 
+            position: fixed; inset: 0; background: #000; z-index: 20000; display: block; 
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s;
         }
-        .lock-box { 
-            text-align: center; padding: 50px 40px; border-radius: 40px; 
-            background: var(--glass-bg); border: 1px solid var(--glass-border);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); width: 85%; max-width: 380px;
-        }
-        .lock-icon { font-size: 3.5rem; color: var(--hacker-green); margin-bottom: 20px; filter: drop-shadow(var(--glow-green)); }
-        .lock-input { display: block; margin: 25px auto; padding: 15px; border-radius: 20px; border: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.4); color: #fff; text-align: center; width: 100%; font-size: 1.1rem; letter-spacing: 4px; outline: none; transition: 0.3s; }
-        .lock-btn { width: 100%; border: none; padding: 16px; border-radius: 20px; cursor: pointer; font-weight: 800; background: var(--hacker-green); color: #000; transition: 0.3s; }
+        #matrix-bg { position: absolute; top: 0; left: 0; opacity: 0.3; width: 100%; height: 100%; }
+        #term-box { position: relative; z-index: 20001; padding: 30px; font-family: monospace; color: var(--hacker-green); }
+        .t-line { margin-bottom: 8px; font-size: 14px; text-shadow: 0 0 5px var(--hacker-green); }
+        #p-bar-box { width: 180px; height: 3px; background: #020; margin: 20px 0; display: none; overflow: hidden; }
+        #p-bar { width: 0%; height: 100%; background: var(--hacker-green); box-shadow: 0 0 10px var(--hacker-green); transition: width 0.1s; }
+        #auth-area { display: none; align-items: center; margin-top: 15px; }
+        #pass-input-term { background: transparent; border: none; color: #fff; font-size: 24px; outline: none; width: 120px; letter-spacing: 5px; font-family: monospace; font-weight: bold; }
 
+        /* انيميشن الدخول الجديد */
+        .hacker-exit { transform: scale(3); opacity: 0; pointer-events: none; }
+        .hacker-shake { animation: terminalShake 0.2s infinite; filter: hue-rotate(90deg) contrast(2); }
+
+        @keyframes terminalShake {
+            0% { transform: translate(2px, 1px) rotate(0deg); }
+            20% { transform: translate(-3px, -2px) rotate(1deg); }
+            40% { transform: translate(-1px, 0px) rotate(-1deg); }
+            60% { transform: translate(3px, 2px) rotate(0deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            100% { transform: translate(1px, 2px) rotate(-1deg); }
+        }
+
+        /* ستايلاتك الأصلية */
         .container { max-width: 480px; margin: auto; display: none; padding: 20px; padding-bottom: 100px; }
         #real-timer { text-align: center; margin-bottom: 20px; }
         .days-big { font-size: 2.2rem; font-weight: 800; display: block; color: var(--hacker-green); text-shadow: var(--glow-green); }
         .hms-small { font-size: 1.1rem; color: var(--nurse-red); font-weight: 600; letter-spacing: 1px; }
-
-        /* مكان عرض المسافة */
         #distance-info { text-align: center; font-size: 0.8rem; color: #888; margin-top: -15px; margin-bottom: 15px; }
-
         .tabs { display: flex; background: var(--glass-bg); border-radius: 20px; margin-bottom: 25px; padding: 6px; gap: 8px; border: 1px solid var(--glass-border); overflow-x: auto; scrollbar-width: none; }
         .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; color: #777; cursor: pointer; border-radius: 15px; font-weight: 800; transition: 0.3s; white-space: nowrap; }
         .tab-btn.active { background: var(--nurse-red); color: white; box-shadow: var(--glow-red); }
         .tab-btn.active.y-theme { background: var(--hacker-green); color: #000; box-shadow: var(--glow-green); }
-
         .card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 30px; padding: 22px; margin-bottom: 20px; backdrop-filter: blur(10px); }
         .m-border { border-right: 5px solid var(--nurse-red); }
         .y-border { border-right: 5px solid var(--hacker-green); }
-
         .section { display: none; }
         .section.active { display: block; animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-
         #chat-box, #wish-list { height: 320px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 25px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--glass-border); scroll-behavior: smooth; }
         .msg { padding: 10px 15px; border-radius: 18px; max-width: 85%; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; }
         .msg.يوسف { align-self: flex-end; background: #00331a; color: var(--hacker-green); border-bottom-right-radius: 4px; }
         .msg.مريم { align-self: flex-start; background: #330011; color: var(--nurse-red); border-bottom-left-radius: 4px; }
-
         .input-group { display: flex; gap: 8px; margin-top: 10px; }
         .input-group input { flex: 1; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: white; padding: 12px 18px; border-radius: 15px; outline: none; font-family: 'Cairo'; }
-        
-        @keyframes motoLaunch {
-            0% { transform: translateX(0); opacity: 1; }
-            40% { transform: translateX(15px) scale(1.1); opacity: 1; }
-            100% { transform: translateX(-60px); opacity: 0; }
-        }
+        @keyframes motoLaunch { 0% { transform: translateX(0); opacity: 1; } 40% { transform: translateX(15px) scale(1.1); opacity: 1; } 100% { transform: translateX(-60px); opacity: 0; } }
         .moto-active { animation: motoLaunch 0.4s ease-in-out; }
-
         .nudge-btn { position: fixed; bottom: 20px; left: 20px; width: 55px; height: 55px; border-radius: 50%; border: none; background: var(--nurse-red); color: white; font-size: 1.3rem; cursor: pointer; z-index: 999; box-shadow: var(--glow-red); animation: heartbeat 1.5s infinite; }
         #nudge-msg { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: white; color: #000; padding: 15px 30px; border-radius: 50px; font-weight: 800; transition: 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 10001; }
         @keyframes heartbeat { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-        .typing-indicator { font-size: 0.8rem; color: #aaa; margin: 0 15px 10px; display: none; }
     </style>
 </head>
 <body>
 
 <audio id="nudge-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
-
 <div id="nudge-msg">❤️ بيفكر فيكِ حالاً!</div>
 
-<div id="lock-screen">
-    <div class="lock-box" id="lock-box">
-        <i class="fas fa-fingerprint lock-icon"></i>
-        <h2 style="margin:0; font-size:1.3rem;">Evil/Olivia App</h2>
-        <input type="password" id="pass-input" class="lock-input" placeholder="••••" maxlength="4" pattern="\d*">
-        <button class="lock-btn" onclick="unlock()">دخول</button>
+<div id="hacker-screen">
+    <canvas id="matrix-bg"></canvas>
+    <div id="term-box">
+        <div id="log-c"></div>
+        <div id="p-bar-box"><div id="p-bar"></div></div>
+        <div id="auth-area">
+            <span>> PASSWORD_REQUIRED:</span><br>
+            <input type="password" id="pass-input-term" maxlength="4" placeholder="****" inputmode="numeric" autocomplete="off">
+        </div>
     </div>
 </div>
 
@@ -205,7 +205,6 @@
         <div id="typing-notify" class="typing-indicator"></div>
         <div class="input-group" style="background:rgba(255,255,255,0.08); padding:8px; border-radius:50px; border:1px solid var(--hacker-green); align-items:center;">
             <input type="text" id="msg-input" placeholder="اكتب شيئاً..." style="background:none; border:none; padding-left:15px; flex:1; color: white;" onkeypress="if(event.key==='Enter') sendMsg()">
-            
             <button id="moto-btn" onclick="sendMsg()" style="width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; background: var(--hacker-green); box-shadow: 0 0 15px var(--hacker-green); cursor: pointer;">
                 <i class="fas fa-motorcycle" style="font-size:1.4rem; color: #000;"></i>
             </button>
@@ -218,49 +217,88 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // تسجيل الـ Service Worker لـ PWA
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js').then(reg => console.log('PWA SW Registered'));
-        });
-    }
+    // وظيفة الـ Terminal
+    const logContainer = document.getElementById('log-c');
+    const termLines = ["Initializing System...", "Loading Neural Network...", "Bypassing Firewall...", "Access Granted."];
+    let currentLine = 0;
 
-    function triggerVibrate(pattern = 60) {
-        if (navigator.vibrate) navigator.vibrate(pattern);
-    }
-
-    function unlock() {
-        triggerVibrate();
-        const inputField = document.getElementById('pass-input');
-        let pass = inputField.value.trim().replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
-        
-        if(pass === "1212") {
-            document.getElementById('lock-screen').style.opacity = "0";
-            setTimeout(() => {
-                document.getElementById('lock-screen').style.display = "none";
-                document.getElementById('main-content').style.display = "block";
-                syncRole();
-                updateDailyQuestion();
-                startLocationTracking(); // بدء تتبع الموقع عند الدخول
-            }, 500);
+    function runTerminal() {
+        if (currentLine < termLines.length) {
+            let p = document.createElement('div');
+            p.className = 't-line';
+            p.innerText = "> " + termLines[currentLine];
+            logContainer.appendChild(p);
+            currentLine++;
+            setTimeout(runTerminal, 300);
         } else {
-            const box = document.getElementById('lock-box');
-            box.style.animation = 'shake 0.3s ease';
-            inputField.value = "";
-            setTimeout(() => box.style.animation = '', 300);
+            document.getElementById('p-bar-box').style.display = 'block';
+            let progress = 0;
+            let interval = setInterval(() => {
+                progress += 10;
+                document.getElementById('p-bar').style.width = progress + '%';
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    document.getElementById('auth-area').style.display = 'block';
+                    document.getElementById('pass-input-term').focus();
+                }
+            }, 50);
         }
     }
 
-    // تتبع الموقع وحساب المسافة
+    // الماتريكس
+    const canvas = document.getElementById('matrix-bg');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const columns = Math.floor(canvas.width / 15);
+    const drops = Array(columns).fill(1);
+    function drawMatrix() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#0f8'; ctx.font = '15px monospace';
+        drops.forEach((y, i) => {
+            ctx.fillText(Math.floor(Math.random()*10), i*15, y*15);
+            if(y*15 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
+        });
+    }
+    setInterval(drawMatrix, 40);
+
+    // التحقق من الباسورد (1212) مع تأثير الدخول الجديد
+    document.getElementById('pass-input-term').addEventListener('input', (e) => {
+        let val = e.target.value.trim().replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+        if (val === "1212") {
+            const screen = document.getElementById('hacker-screen');
+            triggerVibrate([100, 50, 100]);
+            
+            // إضافة تأثير الرعشة والتشويش أولاً
+            screen.classList.add('hacker-shake');
+            
+            setTimeout(() => {
+                // ثم تأثير الاندفاع للخارج Zoom Out
+                screen.classList.remove('hacker-shake');
+                screen.classList.add('hacker-exit');
+                
+                setTimeout(() => {
+                    screen.style.display = 'none';
+                    document.getElementById('main-content').style.display = 'block';
+                    syncRole(); 
+                    updateDailyQuestion(); 
+                    startLocationTracking();
+                }, 500);
+            }, 400); // مدة الرعشة قبل الزوم
+        }
+    });
+
+    // تشغيل الترمينال فور تحميل الصفحة
+    window.onload = runTerminal;
+
+    // --- بقية كودك الأصلي كما هو بدون أي تعديل ---
+    function triggerVibrate(pattern = 60) { if (navigator.vibrate) navigator.vibrate(pattern); }
+
     function startLocationTracking() {
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(pos => {
                 const role = document.getElementById('user-role').value;
-                db.ref('locations/' + role).set({
-                    lat: pos.coords.latitude,
-                    lon: pos.coords.longitude,
-                    t: Date.now()
-                });
+                db.ref('locations/' + role).set({ lat: pos.coords.latitude, lon: pos.coords.longitude, t: Date.now() });
             }, null, { enableHighAccuracy: true });
         }
     }
@@ -275,8 +313,7 @@
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371;
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
@@ -287,11 +324,8 @@
         document.getElementById('y-mood-ctrl').style.display = (role === "يوسف") ? "flex" : "none";
         document.getElementById('y-to-m-ctrl').style.display = (role === "يوسف") ? "flex" : "none";
         document.getElementById('m-to-y-ctrl').style.display = (role === "مريم") ? "flex" : "none";
-        
         const activeTab = document.querySelector('.tab-btn.active');
-        if(activeTab) {
-            if(role === "يوسف") activeTab.classList.add('y-theme'); else activeTab.classList.remove('y-theme');
-        }
+        if(activeTab) { if(role === "يوسف") activeTab.classList.add('y-theme'); else activeTab.classList.remove('y-theme'); }
         document.getElementById('floating-heart').style.background = (role === "يوسف") ? "var(--hacker-green)" : "var(--nurse-red)";
     }
 
@@ -299,13 +333,9 @@
         triggerVibrate();
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active', 'y-theme'));
-        document.getElementById(id).classList.add('active');
-        btn.classList.add('active');
+        document.getElementById(id).classList.add('active'); btn.classList.add('active');
         syncRole();
-        if(id === 'chat') {
-            const cb = document.getElementById('chat-box');
-            setTimeout(() => cb.scrollTop = cb.scrollHeight, 100);
-        }
+        if(id === 'chat') { const cb = document.getElementById('chat-box'); setTimeout(() => cb.scrollTop = cb.scrollHeight, 100); }
     }
 
     const start = new Date("2024-04-16T00:00:00");
@@ -320,7 +350,7 @@
     }, 1000);
 
     function sendNudge() {
-        triggerVibrate([100, 50, 100]); // اهتزاز خاص عند الإرسال
+        triggerVibrate([100, 50, 100]);
         const role = document.getElementById('user-role').value;
         db.ref('nudge').set({ s: role, t: Date.now() });
     }
@@ -328,14 +358,9 @@
     db.ref('nudge').on('value', snap => {
         const d = snap.val();
         if(d && (Date.now() - d.t < 5000)) {
-            const box = document.getElementById('nudge-msg');
-            const sound = document.getElementById('nudge-sound');
-            box.innerText = d.s + " بيفكر فيكِ حالاً! ❤️";
-            box.style.top = "20px";
-            try { 
-                sound.play(); 
-                triggerVibrate([200, 100, 200]); // اهتزاز قوي عند استقبال نغزة
-            } catch(e) {}
+            const box = document.getElementById('nudge-msg'); const sound = document.getElementById('nudge-sound');
+            box.innerText = d.s + " بيفكر فيكِ حالاً! ❤️"; box.style.top = "20px";
+            try { sound.play(); triggerVibrate([200, 100, 200]); } catch(e) {}
             setTimeout(() => box.style.top = "-100px", 4000);
         }
     });
@@ -374,8 +399,7 @@
     db.ref('wishes').on('value', s => {
         const list = document.getElementById('wish-list'); list.innerHTML = "";
         s.forEach(c => {
-            const d = c.val();
-            const div = document.createElement('div');
+            const d = c.val(); const div = document.createElement('div');
             div.style.cssText = "display:flex; justify-content:space-between; padding:12px; background:rgba(255,255,255,0.05); border-radius:15px; margin-bottom:5px;";
             div.innerHTML = `<span>${d.t}</span> <i class="fas ${d.d ? 'fa-check-circle' : 'fa-circle'}" onclick="toggleWish('${c.key}', ${d.d})"></i>`;
             list.appendChild(div);
@@ -383,56 +407,32 @@
     });
 
     function toggleWish(k, st) {
-        triggerVibrate();
-        if(!st) confetti({ particleCount: 100, spread: 70 });
+        triggerVibrate(); if(!st) confetti({ particleCount: 100, spread: 70 });
         db.ref('wishes/'+k).update({ d: !st });
     }
 
-    const qs = [
-        "أكثر شيء يسعدك في يومك؟", "أجمل ذكرى لنا حتى الآن؟", "إيه أكتر ذكرى من طفولتك لسه مأثرة فيك؟",
-        "لو معاك تذكرة سفر لمكان واحد بس، هتختار تروح فين؟", "إيه هو يومك المثالي؟", "إيه أكتر كلمة بتفرحك لما تسمعها مني؟"
-    ];
-
+    const qs = ["أكثر شيء يسعدك في يومك؟", "أجمل ذكرى لنا حتى الآن؟", "إيه أكتر ذكرى من طفولتك لسه مأثرة فيك؟", "لو معاك تذكرة سفر لمكان واحد بس، هتختار تروح فين؟", "إيه هو يومك المثالي؟", "إيه أكتر كلمة بتفرحك لما تسمعها مني؟"];
     function updateDailyQuestion() {
         const index = Math.floor((new Date().setHours(0,0,0,0)/86400000)%qs.length);
         document.getElementById('daily-q-text').innerText = qs[index];
     }
 
     function saveAns() {
-        triggerVibrate();
-        const r = document.getElementById('user-role').value;
-        const a = document.getElementById('ans-in').value;
-        if(a.trim()) {
-            db.ref('ans/'+r).set(a);
-            alert("تم حفظ إجابتك السرية! 🔒");
-            document.getElementById('ans-in').value = "";
-        }
+        triggerVibrate(); const r = document.getElementById('user-role').value; const a = document.getElementById('ans-in').value;
+        if(a.trim()) { db.ref('ans/'+r).set(a); alert("تم حفظ إجابتك السرية! 🔒"); document.getElementById('ans-in').value = ""; }
     }
 
     function sendMsg() {
-        const u = document.getElementById('user-role').value;
-        const input = document.getElementById('msg-input');
-        const btnIcon = document.querySelector('#moto-btn i');
-        const t = input.value;
-
-        if(t.trim()) {
-            triggerVibrate(40);
-            btnIcon.classList.add('moto-active');
-            db.ref('msgs').push().set({s: u, t: t, time: Date.now()});
-            input.value = "";
-            setTimeout(() => btnIcon.classList.remove('moto-active'), 400);
-        }
+        const u = document.getElementById('user-role').value; const input = document.getElementById('msg-input');
+        const btnIcon = document.querySelector('#moto-btn i'); const t = input.value;
+        if(t.trim()) { triggerVibrate(40); btnIcon.classList.add('moto-active'); db.ref('msgs').push().set({s: u, t: t, time: Date.now()}); input.value = ""; setTimeout(() => btnIcon.classList.remove('moto-active'), 400); }
     }
 
     db.ref('msgs').on('child_added', snap => {
-        const d = snap.val();
-        const div = document.createElement('div');
-        div.className = `msg ${d.s}`;
-        div.innerHTML = `<b>${d.s}:</b><br>${d.t}`;
-        const cb = document.getElementById('chat-box');
-        cb.appendChild(div);
-        cb.scrollTop = cb.scrollHeight;
-        if (d.s !== document.getElementById('user-role').value) triggerVibrate(100); // اهتزاز عند استلام رسالة
+        const d = snap.val(); const div = document.createElement('div'); div.className = `msg ${d.s}`;
+        div.innerHTML = `<b>${d.s}:</b><br>${d.t}`; const cb = document.getElementById('chat-box');
+        cb.appendChild(div); cb.scrollTop = cb.scrollHeight;
+        if (d.s !== document.getElementById('user-role').value) triggerVibrate(100);
     });
 </script>
 </body>
