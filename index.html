@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Evil/Olivia App</title>
     
+    <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
@@ -64,6 +65,9 @@
         .days-big { font-size: 2.2rem; font-weight: 800; display: block; color: var(--hacker-green); text-shadow: var(--glow-green); }
         .hms-small { font-size: 1.1rem; color: var(--nurse-red); font-weight: 600; letter-spacing: 1px; }
 
+        /* مكان عرض المسافة */
+        #distance-info { text-align: center; font-size: 0.8rem; color: #888; margin-top: -15px; margin-bottom: 15px; }
+
         .tabs { display: flex; background: var(--glass-bg); border-radius: 20px; margin-bottom: 25px; padding: 6px; gap: 8px; border: 1px solid var(--glass-border); overflow-x: auto; scrollbar-width: none; }
         .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; color: #777; cursor: pointer; border-radius: 15px; font-weight: 800; transition: 0.3s; white-space: nowrap; }
         .tab-btn.active { background: var(--nurse-red); color: white; box-shadow: var(--glow-red); }
@@ -121,6 +125,8 @@
         <span class="days-big" id="days-val">0 Days</span>
         <span class="hms-small" id="hms-val">00:00:00</span>
     </div>
+
+    <div id="distance-info">📍 جاري تحديد المسافة...</div>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="showTab('mood', this)">المود</button>
@@ -212,8 +218,15 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    function triggerVibrate() {
-        if (navigator.vibrate) navigator.vibrate(60);
+    // تسجيل الـ Service Worker لـ PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').then(reg => console.log('PWA SW Registered'));
+        });
+    }
+
+    function triggerVibrate(pattern = 60) {
+        if (navigator.vibrate) navigator.vibrate(pattern);
     }
 
     function unlock() {
@@ -228,6 +241,7 @@
                 document.getElementById('main-content').style.display = "block";
                 syncRole();
                 updateDailyQuestion();
+                startLocationTracking(); // بدء تتبع الموقع عند الدخول
             }, 500);
         } else {
             const box = document.getElementById('lock-box');
@@ -235,6 +249,36 @@
             inputField.value = "";
             setTimeout(() => box.style.animation = '', 300);
         }
+    }
+
+    // تتبع الموقع وحساب المسافة
+    function startLocationTracking() {
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(pos => {
+                const role = document.getElementById('user-role').value;
+                db.ref('locations/' + role).set({
+                    lat: pos.coords.latitude,
+                    lon: pos.coords.longitude,
+                    t: Date.now()
+                });
+            }, null, { enableHighAccuracy: true });
+        }
+    }
+
+    db.ref('locations').on('value', snap => {
+        const locs = snap.val();
+        if (locs && locs.يوسف && locs.مريم) {
+            const dist = calculateDistance(locs.يوسف.lat, locs.يوسف.lon, locs.مريم.lat, locs.مريم.lon);
+            document.getElementById('distance-info').innerText = `📍 المسافة بينكما: ${dist.toFixed(2)} كم`;
+        }
+    });
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
     function syncRole() {
@@ -276,7 +320,7 @@
     }, 1000);
 
     function sendNudge() {
-        triggerVibrate();
+        triggerVibrate([100, 50, 100]); // اهتزاز خاص عند الإرسال
         const role = document.getElementById('user-role').value;
         db.ref('nudge').set({ s: role, t: Date.now() });
     }
@@ -288,7 +332,10 @@
             const sound = document.getElementById('nudge-sound');
             box.innerText = d.s + " بيفكر فيكِ حالاً! ❤️";
             box.style.top = "20px";
-            try { sound.play(); if(navigator.vibrate) navigator.vibrate([100, 50, 100]); } catch(e) {}
+            try { 
+                sound.play(); 
+                triggerVibrate([200, 100, 200]); // اهتزاز قوي عند استقبال نغزة
+            } catch(e) {}
             setTimeout(() => box.style.top = "-100px", 4000);
         }
     });
@@ -369,7 +416,7 @@
         const t = input.value;
 
         if(t.trim()) {
-            triggerVibrate();
+            triggerVibrate(40);
             btnIcon.classList.add('moto-active');
             db.ref('msgs').push().set({s: u, t: t, time: Date.now()});
             input.value = "";
@@ -385,6 +432,7 @@
         const cb = document.getElementById('chat-box');
         cb.appendChild(div);
         cb.scrollTop = cb.scrollHeight;
+        if (d.s !== document.getElementById('user-role').value) triggerVibrate(100); // اهتزاز عند استلام رسالة
     });
 </script>
 </body>
