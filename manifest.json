@@ -1,0 +1,17 @@
+{
+  "name": "Evil Olivia App",
+  "short_name": "Olivia",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#08090b",
+  "theme_color": "#08090b",
+  "description": "تطبيق يوسف ومريم الخاص",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2592/2592209.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
