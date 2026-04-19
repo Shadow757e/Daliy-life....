@@ -46,7 +46,6 @@
 
         ::-webkit-scrollbar { display: none; }
 
-        /* --- ستايل الترمينال الجديد (بديل شاشة القفل) --- */
         #hacker-screen { 
             position: fixed; inset: 0; background: #000; z-index: 20000; display: block; 
             transition: transform 0.5s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.4s ease-in;
@@ -59,7 +58,6 @@
         #auth-area { display: none; align-items: center; margin-top: 15px; }
         #pass-input-term { background: transparent; border: none; color: #fff; font-size: 24px; outline: none; width: 120px; letter-spacing: 5px; font-family: monospace; font-weight: bold; }
 
-        /* انيميشن الدخول الجديد */
         .hacker-exit { transform: scale(0.1); opacity: 0; filter: blur(15px); pointer-events: none; }
         .hacker-shake { animation: terminalShake 0.15s infinite; filter: hue-rotate(90deg) contrast(1.5); }
 
@@ -71,7 +69,6 @@
             100% { transform: translate(0px, 0px); }
         }
 
-        /* ستايلاتك الأصلية */
         .container { max-width: 480px; margin: auto; display: none; padding: 20px; padding-bottom: 100px; }
         #real-timer { text-align: center; margin-bottom: 20px; }
         .days-big { font-size: 2.2rem; font-weight: 800; display: block; color: var(--hacker-green); text-shadow: var(--glow-green); }
@@ -93,11 +90,25 @@
         .msg.مريم { align-self: flex-start; background: #330011; color: var(--nurse-red); border-bottom-left-radius: 4px; }
         .input-group { display: flex; gap: 8px; margin-top: 10px; }
         .input-group input { flex: 1; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: white; padding: 12px 18px; border-radius: 15px; outline: none; font-family: 'Cairo'; }
+        
+        /* تعديل زر الدراجه (الموتوسيكل) ليعود منوراً */
+        #moto-btn { 
+            width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            border: none; background: var(--hacker-green) !important; box-shadow: 0 0 15px var(--hacker-green); cursor: pointer; 
+        }
+        #moto-btn i { color: #000 !important; font-size: 1.4rem; }
         @keyframes motoLaunch { 0% { transform: translateX(0); opacity: 1; } 40% { transform: translateX(15px) scale(1.1); opacity: 1; } 100% { transform: translateX(-60px); opacity: 0; } }
         .moto-active { animation: motoLaunch 0.4s ease-in-out; }
-        .nudge-btn { position: fixed; bottom: 20px; left: 20px; width: 55px; height: 55px; border-radius: 50%; border: none; background: var(--nurse-red); color: white; font-size: 1.3rem; cursor: pointer; z-index: 999; box-shadow: var(--glow-red); animation: heartbeat 1.5s infinite; }
-        #nudge-msg { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: white; color: #000; padding: 15px 30px; border-radius: 50px; font-weight: 800; transition: 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 10001; }
+        
+        /* زر النبض المحسن */
+        .nudge-btn { position: fixed; bottom: 20px; left: 20px; width: 65px; height: 65px; border-radius: 50%; border: none; background: var(--nurse-red); color: white; font-size: 1.5rem; cursor: pointer; z-index: 999; box-shadow: var(--glow-red); transition: transform 0.2s; }
+        .heart-pulse { animation: syncPulse 0.6s infinite !important; background: #ff0000 !important; box-shadow: 0 0 30px #ff0000 !important; }
+        
+        @keyframes syncPulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
         @keyframes heartbeat { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .nudge-btn:not(.heart-pulse) { animation: heartbeat 1.5s infinite; }
+
+        #nudge-msg { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: white; color: #000; padding: 15px 30px; border-radius: 50px; font-weight: 800; transition: 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 10001; }
     </style>
 </head>
 <body>
@@ -117,16 +128,19 @@
     </div>
 </div>
 
-<button class="nudge-btn" id="floating-heart" onclick="sendNudge()"><i class="fas fa-heart"></i></button>
+<button class="nudge-btn" id="floating-heart" 
+        onmousedown="startPulse()" onmouseup="stopPulse()" 
+        ontouchstart="startPulse()" ontouchend="stopPulse()"
+        onclick="sendNudge()">
+    <i class="fas fa-heart"></i>
+</button>
 
 <div class="container" id="main-content">
     <div id="real-timer">
         <span class="days-big" id="days-val">0 Days</span>
         <span class="hms-small" id="hms-val">00:00:00</span>
     </div>
-
     <div id="distance-info">📍 جاري تحديد المسافة...</div>
-
     <div class="tabs">
         <button class="tab-btn active" onclick="showTab('mood', this)">المود</button>
         <button class="tab-btn" onclick="showTab('tasks', this)">المهام</button>
@@ -134,81 +148,23 @@
         <button class="tab-btn" onclick="showTab('questions', this)">سؤال</button>
         <button class="tab-btn" onclick="showTab('chat', this)">الشات</button>
     </div>
-
     <div style="text-align: center; margin-bottom: 20px;">
         <select id="user-role" onchange="syncRole()" style="background:var(--glass-bg); color:white; border:1px solid var(--glass-border); padding:10px; border-radius:15px; font-family:'Cairo';">
             <option value="يوسف">يوسف 🧑‍💻</option>
             <option value="مريم">مريم 🩺</option>
         </select>
     </div>
-
     <div id="mood" class="section active">
-        <div class="card m-border">
-            <h3 style="color:var(--nurse-red); margin:0; font-size:0.8rem;">مود مريم 🩺</h3>
-            <p id="m-mood-display" style="font-size:1.1rem; margin:12px 0;">...</p>
-            <div id="m-mood-ctrl" class="input-group" style="display:none">
-                <input type="text" id="m-mood-text" placeholder="مودِك دلوقتي؟">
-                <button class="tab-btn active" onclick="updateMood('m')">تحديث</button>
-            </div>
-        </div>
-        <div class="card y-border">
-            <h3 style="color:var(--hacker-green); margin:0; font-size:0.8rem;">مود يوسف 🧑‍💻</h3>
-            <p id="y-mood-display" style="font-size:1.1rem; margin:12px 0;">...</p>
-            <div id="y-mood-ctrl" class="input-group" style="display:none">
-                <input type="text" id="y-mood-text" placeholder="مودك دلوقتي؟">
-                <button class="tab-btn active y-theme" onclick="updateMood('y')">تحديث</button>
-            </div>
-        </div>
+        <div class="card m-border"><h3 style="color:var(--nurse-red); margin:0; font-size:0.8rem;">مود مريم 🩺</h3><p id="m-mood-display">...</p><div id="m-mood-ctrl" class="input-group" style="display:none"><input type="text" id="m-mood-text" placeholder="مودِك دلوقتي؟"><button class="tab-btn active" onclick="updateMood('m')">تحديث</button></div></div>
+        <div class="card y-border"><h3 style="color:var(--hacker-green); margin:0; font-size:0.8rem;">مود يوسف 🧑‍💻</h3><p id="y-mood-display">...</p><div id="y-mood-ctrl" class="input-group" style="display:none"><input type="text" id="y-mood-text" placeholder="مودك دلوقتي؟"><button class="tab-btn active y-theme" onclick="updateMood('y')">تحديث</button></div></div>
     </div>
-
     <div id="tasks" class="section">
-        <div class="card m-border">
-            <b style="color:var(--nurse-red);">مهمة مريومهع 🩺:</b>
-            <p id="m-task-display" style="font-size:1.1rem; margin:10px 0;">...</p>
-            <div id="y-to-m-ctrl" class="input-group" style="display:none">
-                <input type="text" id="input-to-m" placeholder="أعطها مهمة...">
-                <button class="tab-btn active y-theme" onclick="saveTask('m')">إرسال</button>
-            </div>
-        </div>
-        <div class="card y-border">
-            <b style="color:var(--hacker-green);">مهمة سفسوفهع 🧑‍💻:</b>
-            <p id="y-task-display" style="font-size:1.1rem; margin:10px 0;">...</p>
-            <div id="m-to-y-ctrl" class="input-group" style="display:none">
-                <input type="text" id="input-to-y" placeholder="أعطه مهمة...">
-                <button class="tab-btn active" onclick="saveTask('y')">إرسال</button>
-            </div>
-        </div>
+        <div class="card m-border"><b style="color:var(--nurse-red);">مهمة مريومهع 🩺:</b><p id="m-task-display">...</p><div id="y-to-m-ctrl" class="input-group" style="display:none"><input type="text" id="input-to-m" placeholder="أعطها مهمة..."><button class="tab-btn active y-theme" onclick="saveTask('m')">إرسال</button></div></div>
+        <div class="card y-border"><b style="color:var(--hacker-green);">مهمة سفسوفهع 🧑‍💻:</b><p id="y-task-display">...</p><div id="m-to-y-ctrl" class="input-group" style="display:none"><input type="text" id="input-to-y" placeholder="أعطه مهمة..."><button class="tab-btn active" onclick="saveTask('y')">إرسال</button></div></div>
     </div>
-
-    <div id="wishes" class="section">
-        <div class="card">
-            <h3 style="color:var(--nurse-red); margin-top:0;">صندوق الأمنيات ✨</h3>
-            <div id="wish-list"></div>
-            <div class="input-group">
-                <input type="text" id="wish-in" placeholder="أمنية جديدة...">
-                <button class="tab-btn active y-theme" onclick="addWish()">إضافة</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="questions" class="section">
-        <div class="card" style="text-align: center;">
-            <h3 id="daily-q-text" style="color:var(--hacker-green); margin-bottom:15px; min-height: 60px;">...</h3>
-            <textarea id="ans-in" style="width:100%; height:100px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:white; border-radius:15px; padding:15px; font-family:'Cairo'; resize:none;" placeholder="إجابتك السرية..."></textarea>
-            <button class="tab-btn active y-theme" style="margin-top:10px; width:100%;" onclick="saveAns()">حفظ الإجابة</button>
-        </div>
-    </div>
-
-    <div id="chat" class="section">
-        <div id="chat-box"></div>
-        <div id="typing-notify" class="typing-indicator"></div>
-        <div class="input-group" style="background:rgba(255,255,255,0.08); padding:8px; border-radius:50px; border:1px solid var(--hacker-green); align-items:center;">
-            <input type="text" id="msg-input" placeholder="اكتب شيئاً..." style="background:none; border:none; padding-left:15px; flex:1; color: white;" onkeypress="if(event.key==='Enter') sendMsg()">
-            <button id="moto-btn" onclick="sendMsg()" style="width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; background: var(--hacker-green); box-shadow: 0 0 15px var(--hacker-green); cursor: pointer;">
-                <i class="fas fa-motorcycle" style="font-size:1.4rem; color: #000;"></i>
-            </button>
-        </div>
-    </div>
+    <div id="wishes" class="section"><div class="card"><h3 style="color:var(--nurse-red); margin-top:0;">صندوق الأمنيات ✨</h3><div id="wish-list"></div><div class="input-group"><input type="text" id="wish-in" placeholder="أمنية جديدة..."><button class="tab-btn active y-theme" onclick="addWish()">إضافة</button></div></div></div>
+    <div id="questions" class="section"><div class="card" style="text-align: center;"><h3 id="daily-q-text" style="color:var(--hacker-green); margin-bottom:15px; min-height: 60px;">...</h3><textarea id="ans-in" style="width:100%; height:100px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:white; border-radius:15px; padding:15px; font-family:'Cairo'; resize:none;" placeholder="إجابتك السرية..."></textarea><button class="tab-btn active y-theme" style="margin-top:10px; width:100%;" onclick="saveAns()">حفظ الإجابة</button></div></div>
+    <div id="chat" class="section"><div id="chat-box"></div><div class="input-group" style="background:rgba(255,255,255,0.08); padding:8px; border-radius:50px; border:1px solid var(--hacker-green); align-items:center;"><input type="text" id="msg-input" placeholder="اكتب شيئاً..." style="background:none; border:none; padding-left:15px; flex:1; color: white;" onkeypress="if(event.key==='Enter') sendMsg()"><button id="moto-btn" onclick="sendMsg()" style="width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; background: var(--hacker-green); cursor: pointer;"><i class="fas fa-motorcycle" style="font-size:1.4rem; color: #000;"></i></button></div></div>
 </div>
 
 <script>
@@ -216,73 +172,70 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // وظيفة الـ Terminal
+    // --- ميزة نبض القلب المشترك ---
+    let pulseInterval;
+    function startPulse() {
+        const role = document.getElementById('user-role').value;
+        db.ref('heart_sync').set({ active: true, sender: role, time: Date.now() });
+        triggerVibrate([50]);
+        pulseInterval = setInterval(() => triggerVibrate([30]), 600);
+    }
+
+    function stopPulse() {
+        clearInterval(pulseInterval);
+        db.ref('heart_sync').set({ active: false, time: Date.now() });
+    }
+
+    db.ref('heart_sync').on('value', snap => {
+        const d = snap.val();
+        const heartBtn = document.getElementById('floating-heart');
+        if (d && d.active) {
+            heartBtn.classList.add('heart-pulse');
+            if (d.sender !== document.getElementById('user-role').value) {
+                triggerVibrate([100, 50, 100]);
+            }
+        } else {
+            heartBtn.classList.remove('heart-pulse');
+        }
+    });
+
     const logContainer = document.getElementById('log-c');
     const termLines = ["Initializing System...", "Loading Neural Network...", "Bypassing Firewall...", "Access Granted."];
     let currentLine = 0;
-
     function runTerminal() {
         if (currentLine < termLines.length) {
-            let p = document.createElement('div');
-            p.className = 't-line';
-            p.innerText = "> " + termLines[currentLine];
-            logContainer.appendChild(p);
-            currentLine++;
-            setTimeout(runTerminal, 300);
+            let p = document.createElement('div'); p.className = 't-line'; p.innerText = "> " + termLines[currentLine];
+            logContainer.appendChild(p); currentLine++; setTimeout(runTerminal, 300);
         } else {
             document.getElementById('p-bar-box').style.display = 'block';
-            let progress = 0;
-            let interval = setInterval(() => {
-                progress += 10;
-                document.getElementById('p-bar').style.width = progress + '%';
-                if (progress >= 100) {
-                    clearInterval(interval);
-                    document.getElementById('auth-area').style.display = 'block';
-                    document.getElementById('pass-input-term').focus();
-                }
+            let progress = 0; let interval = setInterval(() => {
+                progress += 10; document.getElementById('p-bar').style.width = progress + '%';
+                if (progress >= 100) { clearInterval(interval); document.getElementById('auth-area').style.display = 'block'; document.getElementById('pass-input-term').focus(); }
             }, 50);
         }
     }
-
-    // الماتريكس
-    const canvas = document.getElementById('matrix-bg');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.getElementById('matrix-bg'); const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    const columns = Math.floor(canvas.width / 15);
-    const drops = Array(columns).fill(1);
+    const columns = Math.floor(canvas.width / 15); const drops = Array(columns).fill(1);
     function drawMatrix() {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#0f8'; ctx.font = '15px monospace';
-        drops.forEach((y, i) => {
-            ctx.fillText(Math.floor(Math.random()*10), i*15, y*15);
-            if(y*15 > canvas.height && Math.random() > 0.975) drops[i] = 0;
-            drops[i]++;
-        });
+        drops.forEach((y, i) => { ctx.fillText(Math.floor(Math.random()*10), i*15, y*15); if(y*15 > canvas.height && Math.random() > 0.975) drops[i] = 0; drops[i]++; });
     }
     setInterval(drawMatrix, 40);
 
-    // التحقق من الباسورد (1212)
     document.getElementById('pass-input-term').addEventListener('input', (e) => {
         let val = e.target.value.trim().replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
         if (val === "1212") {
-            const screen = document.getElementById('hacker-screen');
-            triggerVibrate([100, 50, 100]);
+            const screen = document.getElementById('hacker-screen'); triggerVibrate([100, 50, 100]);
             screen.classList.add('hacker-shake');
             setTimeout(() => {
-                screen.classList.remove('hacker-shake');
-                screen.classList.add('hacker-exit');
-                setTimeout(() => {
-                    screen.style.display = 'none';
-                    document.getElementById('main-content').style.display = 'block';
-                    syncRole(); 
-                    updateDailyQuestion(); 
-                    startLocationTracking();
-                }, 400);
+                screen.classList.remove('hacker-shake'); screen.classList.add('hacker-exit');
+                setTimeout(() => { screen.style.display = 'none'; document.getElementById('main-content').style.display = 'block'; syncRole(); updateDailyQuestion(); startLocationTracking(); }, 400);
             }, 300);
         }
     });
 
-    // --- ميزة هزة الموبايل العابرة للقارات ---
     let lastShake = 0;
     if (window.DeviceMotionEvent) {
         window.addEventListener('devicemotion', (e) => {
@@ -297,19 +250,16 @@
     }
 
     db.ref('remote_shake').on('value', snap => {
-        const d = snap.val();
-        const myRole = document.getElementById('user-role').value;
+        const d = snap.val(); const myRole = document.getElementById('user-role').value;
         if(d && d.s !== myRole && (Date.now() - d.t < 2000)) {
             triggerVibrate([300, 100, 300, 100, 400]);
-            const box = document.getElementById('nudge-msg');
-            box.innerText = d.s + " بيهز الموبايل! 📱🔥"; box.style.top = "20px";
+            const box = document.getElementById('nudge-msg'); box.innerText = d.s + " بيهز الموبايل! 📱🔥"; box.style.top = "20px";
             setTimeout(() => box.style.top = "-100px", 3000);
         }
     });
 
     window.onload = runTerminal;
-
-    function triggerVibrate(pattern = 60) { if (navigator.vibrate) navigator.vibrate(pattern); }
+    function triggerVibrate(p = 60) { if (navigator.vibrate) navigator.vibrate(p); }
 
     function startLocationTracking() {
         if (navigator.geolocation) {
@@ -321,16 +271,14 @@
     }
 
     db.ref('locations').on('value', snap => {
-        const locs = snap.val();
-        if (locs && locs.يوسف && locs.مريم) {
+        const locs = snap.val(); if (locs && locs.يوسف && locs.مريم) {
             const dist = calculateDistance(locs.يوسف.lat, locs.يوسف.lon, locs.مريم.lat, locs.مريم.lon);
             document.getElementById('distance-info').innerText = `📍 المسافة بينكما: ${dist.toFixed(2)} كم`;
         }
     });
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371;
-        const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
+        const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
@@ -347,34 +295,28 @@
     }
 
     function showTab(id, btn) {
-        triggerVibrate();
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        triggerVibrate(); document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active', 'y-theme'));
-        document.getElementById(id).classList.add('active'); btn.classList.add('active');
-        syncRole();
+        document.getElementById(id).classList.add('active'); btn.classList.add('active'); syncRole();
         if(id === 'chat') { const cb = document.getElementById('chat-box'); setTimeout(() => cb.scrollTop = cb.scrollHeight, 100); }
     }
 
     const start = new Date("2024-04-16T00:00:00");
     setInterval(() => {
-        const diff = new Date() - start;
-        const d = Math.floor(diff/86400000);
+        const diff = new Date() - start; const d = Math.floor(diff/86400000);
         const h = String(Math.floor((diff/3600000)%24)).padStart(2,'0');
         const m = String(Math.floor((diff/60000)%60)).padStart(2,'0');
         const s = String(Math.floor((diff/1000)%60)).padStart(2,'0');
-        document.getElementById('days-val').innerText = d + " Days";
-        document.getElementById('hms-val').innerText = `${h}:${m}:${s}`;
+        document.getElementById('days-val').innerText = d + " Days"; document.getElementById('hms-val').innerText = `${h}:${m}:${s}`;
     }, 1000);
 
     function sendNudge() {
-        triggerVibrate([100, 50, 100]);
-        const role = document.getElementById('user-role').value;
+        triggerVibrate([100, 50, 100]); const role = document.getElementById('user-role').value;
         db.ref('nudge').set({ s: role, t: Date.now() });
     }
 
     db.ref('nudge').on('value', snap => {
-        const d = snap.val();
-        if(d && (Date.now() - d.t < 5000)) {
+        const d = snap.val(); if(d && (Date.now() - d.t < 5000)) {
             const box = document.getElementById('nudge-msg'); const sound = document.getElementById('nudge-sound');
             box.innerText = d.s + " بيفكر فيكِ حالاً! ❤️"; box.style.top = "20px";
             try { sound.play(); triggerVibrate([200, 100, 200]); } catch(e) {}
@@ -383,33 +325,27 @@
     });
 
     function updateMood(u) {
-        triggerVibrate();
-        const t = document.getElementById(u + '-mood-text').value;
+        triggerVibrate(); const t = document.getElementById(u + '-mood-text').value;
         if(t.trim()) db.ref('moods/' + u).set(t);
     }
 
     db.ref('moods').on('value', s => {
         const v = s.val() || {y: '...', m: '...'};
-        document.getElementById('y-mood-display').innerText = v.y;
-        document.getElementById('m-mood-display').innerText = v.m;
+        document.getElementById('y-mood-display').innerText = v.y; document.getElementById('m-mood-display').innerText = v.m;
     });
 
     function saveTask(target) {
-        triggerVibrate();
-        const inp = target === 'm' ? 'input-to-m' : 'input-to-y';
-        const val = document.getElementById(inp).value;
-        if(val.trim()) db.ref('tasks/' + target).set(val);
+        triggerVibrate(); const inp = target === 'm' ? 'input-to-m' : 'input-to-y';
+        const val = document.getElementById(inp).value; if(val.trim()) db.ref('tasks/' + target).set(val);
     }
 
     db.ref('tasks').on('value', s => {
         const d = s.val() || {y: 'لا يوجد', m: 'لا يوجد'};
-        document.getElementById('y-task-display').innerText = d.y;
-        document.getElementById('m-task-display').innerText = d.m;
+        document.getElementById('y-task-display').innerText = d.y; document.getElementById('m-task-display').innerText = d.m;
     });
 
     function addWish() {
-        triggerVibrate();
-        const t = document.getElementById('wish-in').value;
+        triggerVibrate(); const t = document.getElementById('wish-in').value;
         if(t.trim()) db.ref('wishes').push({ t: t, d: false });
     }
 
