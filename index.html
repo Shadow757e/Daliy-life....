@@ -107,6 +107,20 @@
         .nudge-btn:not(.heart-pulse) { animation: heartbeat 1.5s infinite; }
 
         #nudge-msg { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: white; color: #000; padding: 15px 30px; border-radius: 50px; font-weight: 800; transition: 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 10001; }
+
+        /* القائمة الشيك المضافة */
+        #custom-menu {
+            position: fixed; background: #12141a; border: 1px solid var(--hacker-green);
+            border-radius: 12px; padding: 8px 0; z-index: 30000; display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); min-width: 120px;
+        }
+        .menu-item {
+            padding: 10px 20px; color: white; font-size: 0.9rem; cursor: pointer;
+            transition: 0.2s; display: flex; align-items: center; gap: 10px;
+        }
+        .menu-item:hover { background: rgba(0, 255, 136, 0.1); color: var(--hacker-green); }
+        .menu-item.delete-item { color: #ff4d6d; }
+        .menu-item.delete-item:hover { background: rgba(255, 77, 109, 0.1); }
     </style>
 </head>
 <body>
@@ -124,6 +138,11 @@
             <input type="password" id="pass-input-term" maxlength="4" placeholder="****" inputmode="numeric" autocomplete="off">
         </div>
     </div>
+</div>
+
+<div id="custom-menu">
+    <div class="menu-item" id="menu-edit"><i class="fas fa-edit"></i> تعديل</div>
+    <div class="menu-item delete-item" id="menu-delete"><i class="fas fa-trash"></i> حذف</div>
 </div>
 
 <button class="nudge-btn" id="floating-heart" 
@@ -162,7 +181,7 @@
     </div>
     <div id="wishes" class="section"><div class="card"><h3 style="color:var(--nurse-red); margin-top:0;">صندوق الأمنيات ✨</h3><div id="wish-list"></div><div class="input-group"><input type="text" id="wish-in" placeholder="أمنية جديدة..."><button class="tab-btn active y-theme" onclick="addWish()">إضافة</button></div></div></div>
     <div id="questions" class="section"><div class="card" style="text-align: center;"><h3 id="daily-q-text" style="color:var(--hacker-green); margin-bottom:15px; min-height: 60px;">...</h3><textarea id="ans-in" style="width:100%; height:100px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:white; border-radius:15px; padding:15px; font-family:'Cairo'; resize:none;" placeholder="إجابتك السرية..."></textarea><button class="tab-btn active y-theme" style="margin-top:10px; width:100%;" onclick="saveAns()">حفظ الإجابة</button></div></div>
-    <div id="chat" class="section"><div id="chat-box"></div><div class="input-group" style="background:rgba(255,255,255,0.08); padding:8px; border-radius:50px; border:1px solid var(--hacker-green); align-items:center;"><input type="text" id="msg-input" placeholder="اكتب شيئاً..." style="background:none; border:none; padding-left:15px; flex:1; color: white;" onkeypress="if(event.key==='Enter') sendMsg()"><button id="moto-btn" onclick="sendMsg()" style="width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; background: var(--hacker-green); cursor: pointer;"><i class="fas fa-motorcycle" style="font-size:1.4rem; color: #000;"></i></button></div></div>
+    <div id="chat" class="section"><div id="chat-box"></div><div class="input-group" style="background:rgba(255,255,255,0.08); padding:8px; border-radius:50px; border:1px solid var(--hacker-green); align-items:center;"><input type="text" id="msg-input" placeholder="اكتب شيئاً..." style="background:none; border:none; padding-left:15px; flex:1; color: white;" onkeypress="if(event.key==='Enter') sendMsg()"><button id="moto-btn" onclick="sendMsg()"><i class="fas fa-motorcycle"></i></button></div></div>
 </div>
 
 <script>
@@ -372,7 +391,10 @@
         if(a.trim()) { db.ref('ans/'+r).set(a); alert("تم حفظ إجابتك السرية! 🔒"); document.getElementById('ans-in').value = ""; }
     }
 
-    // --- نظام الشات المطور (تعديل وحذف) ---
+    // --- نظام الشات المطور (الطريقة الشيك) ---
+    let selectedMsgKey = null;
+    let selectedMsgText = "";
+
     function sendMsg() {
         const u = document.getElementById('user-role').value; const input = document.getElementById('msg-input');
         const btnIcon = document.querySelector('#moto-btn i'); const t = input.value;
@@ -385,7 +407,6 @@
         }
     }
 
-    // عرض الرسايل مع معالجة التحديث والحذف التلقائي
     db.ref('msgs').on('child_added', snap => renderMessage(snap));
     db.ref('msgs').on('child_changed', snap => {
         const msgDiv = document.querySelector(`[data-key="${snap.key}"]`);
@@ -396,6 +417,34 @@
         if (msgDiv) msgDiv.remove();
     });
 
+    function handleMsgAction(key, oldText, e) {
+        selectedMsgKey = key;
+        selectedMsgText = oldText;
+        const menu = document.getElementById('custom-menu');
+        menu.style.display = 'block';
+        
+        let x = e.pageX || (e.touches ? e.touches[0].pageX : 0);
+        let y = e.pageY || (e.touches ? e.touches[0].pageY : 0);
+        
+        if (x + 150 > window.innerWidth) x -= 130;
+        if (y + 100 > window.innerHeight) y -= 80;
+
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        triggerVibrate(50);
+    }
+
+    window.onclick = () => document.getElementById('custom-menu').style.display = 'none';
+
+    document.getElementById('menu-edit').onclick = () => {
+        const newT = prompt("عدل رسالتك:", selectedMsgText);
+        if (newT && newT.trim() !== selectedMsgText) db.ref('msgs/' + selectedMsgKey).update({ t: newT });
+    };
+
+    document.getElementById('menu-delete').onclick = () => {
+        if (confirm("حذف الرسالة نهائياً؟")) db.ref('msgs/' + selectedMsgKey).remove();
+    };
+
     function renderMessage(snap) {
         const d = snap.val(); const key = snap.key;
         const myRole = document.getElementById('user-role').value;
@@ -403,27 +452,15 @@
         div.setAttribute('data-key', key);
         div.innerHTML = `<b>${d.s}:</b><br>${d.t}`;
         
-        // لو دي رسالتي، ضيف ميزة اللمس المطول
         if (d.s === myRole) {
             let timer;
-            div.ontouchstart = () => timer = setTimeout(() => handleMsgAction(key, d.t), 800);
+            div.ontouchstart = (e) => timer = setTimeout(() => handleMsgAction(key, d.t, e), 700);
             div.ontouchend = () => clearTimeout(timer);
-            div.oncontextmenu = (e) => { e.preventDefault(); handleMsgAction(key, d.t); };
+            div.oncontextmenu = (e) => { e.preventDefault(); handleMsgAction(key, d.t, e); };
         }
 
         const cb = document.getElementById('chat-box'); cb.appendChild(div); cb.scrollTop = cb.scrollHeight;
         if (d.s !== myRole) triggerVibrate(100);
-    }
-
-    function handleMsgAction(key, oldText) {
-        triggerVibrate([50, 50]);
-        const act = confirm("تعديل الرسالة؟ (إلغاء للحذف)");
-        if (act) {
-            const newT = prompt("اكتب النص الجديد:", oldText);
-            if (newT && newT.trim() !== oldText) db.ref('msgs/' + key).update({ t: newT });
-        } else {
-            if (confirm("هل أنت متأكد من حذف الرسالة نهائياً؟")) db.ref('msgs/' + key).remove();
-        }
     }
 </script>
 </body>
