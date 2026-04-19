@@ -84,6 +84,7 @@
         .section { display: none; }
         .section.active { display: block; animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
         #chat-box, #wish-list { height: 320px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 25px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--glass-border); scroll-behavior: smooth; }
         .msg { padding: 10px 15px; border-radius: 18px; max-width: 85%; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; position: relative; }
         .msg.يوسف { align-self: flex-end; background: #00331a; color: var(--hacker-green); border-bottom-right-radius: 4px; }
@@ -108,19 +109,35 @@
 
         #nudge-msg { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: white; color: #000; padding: 15px 30px; border-radius: 50px; font-weight: 800; transition: 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 10001; }
 
-        /* القائمة الشيك المضافة */
+        /* القائمة الشيك المدمجة */
         #custom-menu {
             position: fixed; background: #12141a; border: 1px solid var(--hacker-green);
-            border-radius: 12px; padding: 8px 0; z-index: 30000; display: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); min-width: 120px;
+            border-radius: 12px; padding: 0; z-index: 30000; display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); min-width: 150px; overflow: hidden;
         }
+        .reactions-picker { display: flex; justify-content: space-around; padding: 10px; background: rgba(255,255,255,0.05); border-bottom: 1px solid #333; }
+        .react-btn { cursor: pointer; font-size: 1.2rem; transition: 0.2s; }
+        .react-btn:hover { transform: scale(1.3); }
+        
         .menu-item {
-            padding: 10px 20px; color: white; font-size: 0.9rem; cursor: pointer;
+            padding: 12px 20px; color: white; font-size: 0.9rem; cursor: pointer;
             transition: 0.2s; display: flex; align-items: center; gap: 10px;
         }
         .menu-item:hover { background: rgba(0, 255, 136, 0.1); color: var(--hacker-green); }
         .menu-item.delete-item { color: #ff4d6d; }
         .menu-item.delete-item:hover { background: rgba(255, 77, 109, 0.1); }
+
+        /* ستايل التفاعل والرد */
+        .reaction-container { position: absolute; bottom: -10px; background: #1a1c25; border: 1px solid var(--glass-border); border-radius: 10px; padding: 1px 5px; font-size: 0.75rem; z-index: 5; }
+        .msg.يوسف .reaction-container { right: 10px; }
+        .msg.مريم .reaction-container { left: 10px; }
+        
+        .reply-content { background: rgba(255,255,255,0.1); border-left: 3px solid var(--hacker-green); padding: 5px 8px; border-radius: 5px; margin-bottom: 5px; font-size: 0.75rem; opacity: 0.8; }
+        
+        #reply-preview { display: none; background: #111; padding: 10px; border-top: 2px solid var(--hacker-green); color: #ccc; font-size: 0.8rem; position: relative; }
+        #typing-status { font-size: 0.75rem; color: var(--hacker-green); margin-bottom: 5px; height: 15px; opacity: 0.8; font-style: italic; padding-right: 10px; }
+        .seen-status { font-size: 0.65rem; display: block; text-align: left; opacity: 0.6; margin-top: 2px; }
+        .msg.مريم .seen-status { text-align: right; }
     </style>
 </head>
 <body>
@@ -141,6 +158,13 @@
 </div>
 
 <div id="custom-menu">
+    <div class="reactions-picker">
+        <span class="react-btn" onclick="addReact('❤️')">❤️</span>
+        <span class="react-btn" onclick="addReact('😂')">😂</span>
+        <span class="react-btn" onclick="addReact('🔥')">🔥</span>
+        <span class="react-btn" onclick="addReact('👍')">👍</span>
+    </div>
+    <div class="menu-item" onclick="startReply()"><i class="fas fa-reply"></i> رد</div>
     <div class="menu-item" id="menu-edit"><i class="fas fa-edit"></i> تعديل</div>
     <div class="menu-item delete-item" id="menu-delete"><i class="fas fa-trash"></i> حذف</div>
 </div>
@@ -181,7 +205,18 @@
     </div>
     <div id="wishes" class="section"><div class="card"><h3 style="color:var(--nurse-red); margin-top:0;">صندوق الأمنيات ✨</h3><div id="wish-list"></div><div class="input-group"><input type="text" id="wish-in" placeholder="أمنية جديدة..."><button class="tab-btn active y-theme" onclick="addWish()">إضافة</button></div></div></div>
     <div id="questions" class="section"><div class="card" style="text-align: center;"><h3 id="daily-q-text" style="color:var(--hacker-green); margin-bottom:15px; min-height: 60px;">...</h3><textarea id="ans-in" style="width:100%; height:100px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:white; border-radius:15px; padding:15px; font-family:'Cairo'; resize:none;" placeholder="إجابتك السرية..."></textarea><button class="tab-btn active y-theme" style="margin-top:10px; width:100%;" onclick="saveAns()">حفظ الإجابة</button></div></div>
-    <div id="chat" class="section"><div id="chat-box"></div><div class="input-group" style="background:rgba(255,255,255,0.08); padding:8px; border-radius:50px; border:1px solid var(--hacker-green); align-items:center;"><input type="text" id="msg-input" placeholder="اكتب شيئاً..." style="background:none; border:none; padding-left:15px; flex:1; color: white;" onkeypress="if(event.key==='Enter') sendMsg()"><button id="moto-btn" onclick="sendMsg()"><i class="fas fa-motorcycle"></i></button></div></div>
+    <div id="chat" class="section">
+        <div id="typing-status"></div>
+        <div id="chat-box"></div>
+        <div id="reply-preview">
+            <div id="reply-preview-text" style="border-right: 3px solid var(--hacker-green); padding-right: 10px;"></div>
+            <i class="fas fa-times" onclick="cancelReply()" style="position:absolute; left:15px; top:10px; color:var(--nurse-red);"></i>
+        </div>
+        <div class="input-group" style="background:rgba(255,255,255,0.08); padding:8px; border-radius:50px; border:1px solid var(--hacker-green); align-items:center;">
+            <input type="text" id="msg-input" placeholder="اكتب شيئاً..." style="background:none; border:none; padding-left:15px; flex:1; color: white;" onkeypress="if(event.key==='Enter') sendMsg()">
+            <button id="moto-btn" onclick="sendMsg()"><i class="fas fa-motorcycle"></i></button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -308,13 +343,21 @@
         const activeTab = document.querySelector('.tab-btn.active');
         if(activeTab) { if(role === "يوسف") activeTab.classList.add('y-theme'); else activeTab.classList.remove('y-theme'); }
         document.getElementById('floating-heart').style.background = (role === "يوسف") ? "var(--hacker-green)" : "var(--nurse-red)";
+        
+        if(document.getElementById('chat').classList.contains('active')) {
+            updateSeenStatus();
+        }
     }
 
     function showTab(id, btn) {
         triggerVibrate(); document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active', 'y-theme'));
         document.getElementById(id).classList.add('active'); btn.classList.add('active'); syncRole();
-        if(id === 'chat') { const cb = document.getElementById('chat-box'); setTimeout(() => cb.scrollTop = cb.scrollHeight, 100); }
+        if(id === 'chat') { 
+            const cb = document.getElementById('chat-box'); 
+            setTimeout(() => cb.scrollTop = cb.scrollHeight, 100); 
+            updateSeenStatus();
+        }
     }
 
     const start = new Date("2024-04-16T00:00:00");
@@ -391,9 +434,32 @@
         if(a.trim()) { db.ref('ans/'+r).set(a); alert("تم حفظ إجابتك السرية! 🔒"); document.getElementById('ans-in').value = ""; }
     }
 
-    // --- نظام الشات المطور (الطريقة الشيك) ---
+    // --- نظام الشات المطور ---
     let selectedMsgKey = null;
     let selectedMsgText = "";
+    let selectedMsgSender = "";
+    let replyToData = null;
+
+    document.getElementById('msg-input').addEventListener('input', () => {
+        const u = document.getElementById('user-role').value;
+        db.ref('typing/' + u).set({ isTyping: true, t: Date.now() });
+        clearTimeout(window.typingTimer);
+        window.typingTimer = setTimeout(() => db.ref('typing/' + u).set({ isTyping: false }), 2000);
+    });
+
+    db.ref('typing').on('value', snap => {
+        const data = snap.val(); const myRole = document.getElementById('user-role').value;
+        const otherRole = (myRole === "يوسف") ? "مريم" : "يوسف";
+        const statusDiv = document.getElementById('typing-status');
+        if (data && data[otherRole] && data[otherRole].isTyping) {
+            statusDiv.innerText = `${otherRole} يكتب الآن...`;
+        } else { statusDiv.innerText = ""; }
+    });
+
+    function updateSeenStatus() {
+        const u = document.getElementById('user-role').value;
+        db.ref('last_seen/' + u).set(Date.now());
+    }
 
     function sendMsg() {
         const u = document.getElementById('user-role').value; const input = document.getElementById('msg-input');
@@ -401,40 +467,142 @@
         if(t.trim()) { 
             triggerVibrate(40); 
             btnIcon.classList.add('moto-active'); 
-            db.ref('msgs').push().set({s: u, t: t, time: Date.now()}); 
+            db.ref('msgs').push().set({
+                s: u, 
+                t: t, 
+                time: Date.now(),
+                reply: replyToData
+            }); 
             input.value = ""; 
+            cancelReply();
+            db.ref('typing/' + u).set({ isTyping: false });
             setTimeout(() => btnIcon.classList.remove('moto-active'), 400); 
         }
+    }
+
+    // وظائف الرياكت والرد
+    function addReact(emoji) {
+        if (selectedMsgKey) {
+            db.ref('msgs/' + selectedMsgKey + '/react').set(emoji);
+            document.getElementById('custom-menu').style.display = 'none';
+            triggerVibrate(40);
+        }
+    }
+
+    function startReply() {
+        replyToData = { s: selectedMsgSender, t: selectedMsgText };
+        const preview = document.getElementById('reply-preview');
+        document.getElementById('reply-preview-text').innerText = `رد على ${selectedMsgSender}: ${selectedMsgText.substring(0,25)}...`;
+        preview.style.display = 'block';
+        document.getElementById('custom-menu').style.display = 'none';
+        document.getElementById('msg-input').focus();
+    }
+
+    function cancelReply() {
+        replyToData = null;
+        document.getElementById('reply-preview').style.display = 'none';
     }
 
     db.ref('msgs').on('child_added', snap => renderMessage(snap));
     db.ref('msgs').on('child_changed', snap => {
         const msgDiv = document.querySelector(`[data-key="${snap.key}"]`);
-        if (msgDiv) msgDiv.innerHTML = `<b>${snap.val().s}:</b><br>${snap.val().t} <i style="font-size:0.6rem; opacity:0.5;">(معدلة)</i>`;
+        if (msgDiv) {
+            const d = snap.val();
+            renderInnerMsg(msgDiv, d);
+        }
     });
     db.ref('msgs').on('child_removed', snap => {
         const msgDiv = document.querySelector(`[data-key="${snap.key}"]`);
         if (msgDiv) msgDiv.remove();
     });
 
-    function handleMsgAction(key, oldText, e) {
-        selectedMsgKey = key;
-        selectedMsgText = oldText;
-        const menu = document.getElementById('custom-menu');
-        menu.style.display = 'block';
-        
-        let x = e.pageX || (e.touches ? e.touches[0].pageX : 0);
-        let y = e.pageY || (e.touches ? e.touches[0].pageY : 0);
-        
-        if (x + 150 > window.innerWidth) x -= 130;
-        if (y + 100 > window.innerHeight) y -= 80;
+    function renderInnerMsg(div, d) {
+        let html = "";
+        if (d.reply) {
+            html += `<div class="reply-content"><b>${d.reply.s}:</b> ${d.reply.t.substring(0,30)}</div>`;
+        }
+        html += `<b>${d.s}:</b><br>`;
+        if (d.t.match(/\.(jpeg|jpg|gif|png)$/) != null || d.t.startsWith('http')) {
+            html += `<img src="${d.t}" style="width:100%; border-radius:10px; margin-top:5px;" onerror="this.outerHTML='${d.t}'">`;
+        } else {
+            html += d.t;
+        }
+        if (d.react) html += `<div class="reaction-container">${d.react}</div>`;
+        div.innerHTML = html;
+        updateSeenMarkers(div, d.time, d.s);
+    }
 
-        menu.style.left = x + 'px';
-        menu.style.top = y + 'px';
+    function renderMessage(snap) {
+        const d = snap.val(); const key = snap.key;
+        const myRole = document.getElementById('user-role').value;
+        const div = document.createElement('div'); div.className = `msg ${d.s}`;
+        div.setAttribute('data-key', key);
+        div.setAttribute('data-time', d.time);
+        
+        renderInnerMsg(div, d);
+        
+        let timer;
+        div.ontouchstart = (e) => timer = setTimeout(() => handleMsgAction(key, d.t, e, d.s), 700);
+        div.ontouchend = () => clearTimeout(timer);
+        div.oncontextmenu = (e) => { e.preventDefault(); handleMsgAction(key, d.t, e, d.s); };
+
+        const cb = document.getElementById('chat-box'); cb.appendChild(div); cb.scrollTop = cb.scrollHeight;
+        if (d.s !== myRole) triggerVibrate(100);
+    }
+
+    function updateSeenMarkers(m, msgTime, sender) {
+        db.ref('last_seen').once('value', snap => {
+            const seenData = snap.val();
+            const role = sender;
+            const otherRole = (role === 'يوسف') ? 'مريم' : 'يوسف';
+            if(seenData && seenData[otherRole] && seenData[otherRole] > msgTime) {
+                if(!m.querySelector('.seen-status')) {
+                    const s = document.createElement('span'); s.className = 'seen-status';
+                    s.innerHTML = '<i class="fas fa-check-double" style="color:var(--hacker-green)"></i> شوهد';
+                    m.appendChild(s);
+                }
+            }
+        });
+    }
+
+    db.ref('last_seen').on('value', snap => {
+        const seenData = snap.val();
+        document.querySelectorAll('.msg').forEach(m => {
+            const msgTime = m.getAttribute('data-time');
+            const sender = m.classList.contains('يوسف') ? 'يوسف' : 'مريم';
+            const otherRole = (sender === 'يوسف') ? 'مريم' : 'يوسف';
+            if(seenData && seenData[otherRole] && seenData[otherRole] > msgTime) {
+                if(!m.querySelector('.seen-status')) {
+                    const s = document.createElement('span'); s.className = 'seen-status';
+                    s.innerHTML = '<i class="fas fa-check-double" style="color:var(--hacker-green)"></i> شوهد';
+                    m.appendChild(s);
+                }
+            }
+        });
+    });
+
+    function handleMsgAction(key, oldText, e, sender) {
+        selectedMsgKey = key; selectedMsgText = oldText; selectedMsgSender = sender;
+        const myRole = document.getElementById('user-role').value;
+        const menu = document.getElementById('custom-menu');
+        
+        // إخفاء التعديل والحذف لو مش رسالتك
+        document.getElementById('menu-edit').style.display = (sender === myRole) ? 'flex' : 'none';
+        document.getElementById('menu-delete').style.display = (sender === myRole) ? 'flex' : 'none';
+
+        menu.style.display = 'block';
+        let x = (e.pageX || (e.touches ? e.touches[0].pageX : 0));
+        let y = (e.pageY || (e.touches ? e.touches[0].pageY : 0));
+        menu.style.left = Math.min(x, window.innerWidth - 160) + 'px';
+        menu.style.top = Math.min(y, window.innerHeight - 200) + 'px';
         triggerVibrate(50);
     }
 
-    window.onclick = () => document.getElementById('custom-menu').style.display = 'none';
+    window.onclick = (e) => {
+        if(!e.target.closest('.msg') && !e.target.closest('#custom-menu')) {
+            document.getElementById('custom-menu').style.display = 'none';
+        }
+    };
 
     document.getElementById('menu-edit').onclick = () => {
         const newT = prompt("عدل رسالتك:", selectedMsgText);
@@ -444,24 +612,6 @@
     document.getElementById('menu-delete').onclick = () => {
         if (confirm("حذف الرسالة نهائياً؟")) db.ref('msgs/' + selectedMsgKey).remove();
     };
-
-    function renderMessage(snap) {
-        const d = snap.val(); const key = snap.key;
-        const myRole = document.getElementById('user-role').value;
-        const div = document.createElement('div'); div.className = `msg ${d.s}`;
-        div.setAttribute('data-key', key);
-        div.innerHTML = `<b>${d.s}:</b><br>${d.t}`;
-        
-        if (d.s === myRole) {
-            let timer;
-            div.ontouchstart = (e) => timer = setTimeout(() => handleMsgAction(key, d.t, e), 700);
-            div.ontouchend = () => clearTimeout(timer);
-            div.oncontextmenu = (e) => { e.preventDefault(); handleMsgAction(key, d.t, e); };
-        }
-
-        const cb = document.getElementById('chat-box'); cb.appendChild(div); cb.scrollTop = cb.scrollHeight;
-        if (d.s !== myRole) triggerVibrate(100);
-    }
 </script>
 </body>
 </html>
