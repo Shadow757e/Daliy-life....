@@ -85,13 +85,12 @@
         .section.active { display: block; animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         #chat-box, #wish-list { height: 320px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 25px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--glass-border); scroll-behavior: smooth; }
-        .msg { padding: 10px 15px; border-radius: 18px; max-width: 85%; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; }
+        .msg { padding: 10px 15px; border-radius: 18px; max-width: 85%; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; position: relative; }
         .msg.يوسف { align-self: flex-end; background: #00331a; color: var(--hacker-green); border-bottom-right-radius: 4px; }
         .msg.مريم { align-self: flex-start; background: #330011; color: var(--nurse-red); border-bottom-left-radius: 4px; }
         .input-group { display: flex; gap: 8px; margin-top: 10px; }
         .input-group input { flex: 1; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: white; padding: 12px 18px; border-radius: 15px; outline: none; font-family: 'Cairo'; }
         
-        /* تعديل زر الدراجه (الموتوسيكل) ليعود منوراً */
         #moto-btn { 
             width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
             border: none; background: var(--hacker-green) !important; box-shadow: 0 0 15px var(--hacker-green); cursor: pointer; 
@@ -100,7 +99,6 @@
         @keyframes motoLaunch { 0% { transform: translateX(0); opacity: 1; } 40% { transform: translateX(15px) scale(1.1); opacity: 1; } 100% { transform: translateX(-60px); opacity: 0; } }
         .moto-active { animation: motoLaunch 0.4s ease-in-out; }
         
-        /* زر النبض المحسن */
         .nudge-btn { position: fixed; bottom: 20px; left: 20px; width: 65px; height: 65px; border-radius: 50%; border: none; background: var(--nurse-red); color: white; font-size: 1.5rem; cursor: pointer; z-index: 999; box-shadow: var(--glow-red); transition: transform 0.2s; }
         .heart-pulse { animation: syncPulse 0.6s infinite !important; background: #ff0000 !important; box-shadow: 0 0 30px #ff0000 !important; }
         
@@ -172,7 +170,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- ميزة نبض القلب المشترك ---
     let pulseInterval;
     function startPulse() {
         const role = document.getElementById('user-role').value;
@@ -375,18 +372,59 @@
         if(a.trim()) { db.ref('ans/'+r).set(a); alert("تم حفظ إجابتك السرية! 🔒"); document.getElementById('ans-in').value = ""; }
     }
 
+    // --- نظام الشات المطور (تعديل وحذف) ---
     function sendMsg() {
         const u = document.getElementById('user-role').value; const input = document.getElementById('msg-input');
         const btnIcon = document.querySelector('#moto-btn i'); const t = input.value;
-        if(t.trim()) { triggerVibrate(40); btnIcon.classList.add('moto-active'); db.ref('msgs').push().set({s: u, t: t, time: Date.now()}); input.value = ""; setTimeout(() => btnIcon.classList.remove('moto-active'), 400); }
+        if(t.trim()) { 
+            triggerVibrate(40); 
+            btnIcon.classList.add('moto-active'); 
+            db.ref('msgs').push().set({s: u, t: t, time: Date.now()}); 
+            input.value = ""; 
+            setTimeout(() => btnIcon.classList.remove('moto-active'), 400); 
+        }
     }
 
-    db.ref('msgs').on('child_added', snap => {
-        const d = snap.val(); const div = document.createElement('div'); div.className = `msg ${d.s}`;
-        div.innerHTML = `<b>${d.s}:</b><br>${d.t}`; const cb = document.getElementById('chat-box');
-        cb.appendChild(div); cb.scrollTop = cb.scrollHeight;
-        if (d.s !== document.getElementById('user-role').value) triggerVibrate(100);
+    // عرض الرسايل مع معالجة التحديث والحذف التلقائي
+    db.ref('msgs').on('child_added', snap => renderMessage(snap));
+    db.ref('msgs').on('child_changed', snap => {
+        const msgDiv = document.querySelector(`[data-key="${snap.key}"]`);
+        if (msgDiv) msgDiv.innerHTML = `<b>${snap.val().s}:</b><br>${snap.val().t} <i style="font-size:0.6rem; opacity:0.5;">(معدلة)</i>`;
     });
+    db.ref('msgs').on('child_removed', snap => {
+        const msgDiv = document.querySelector(`[data-key="${snap.key}"]`);
+        if (msgDiv) msgDiv.remove();
+    });
+
+    function renderMessage(snap) {
+        const d = snap.val(); const key = snap.key;
+        const myRole = document.getElementById('user-role').value;
+        const div = document.createElement('div'); div.className = `msg ${d.s}`;
+        div.setAttribute('data-key', key);
+        div.innerHTML = `<b>${d.s}:</b><br>${d.t}`;
+        
+        // لو دي رسالتي، ضيف ميزة اللمس المطول
+        if (d.s === myRole) {
+            let timer;
+            div.ontouchstart = () => timer = setTimeout(() => handleMsgAction(key, d.t), 800);
+            div.ontouchend = () => clearTimeout(timer);
+            div.oncontextmenu = (e) => { e.preventDefault(); handleMsgAction(key, d.t); };
+        }
+
+        const cb = document.getElementById('chat-box'); cb.appendChild(div); cb.scrollTop = cb.scrollHeight;
+        if (d.s !== myRole) triggerVibrate(100);
+    }
+
+    function handleMsgAction(key, oldText) {
+        triggerVibrate([50, 50]);
+        const act = confirm("تعديل الرسالة؟ (إلغاء للحذف)");
+        if (act) {
+            const newT = prompt("اكتب النص الجديد:", oldText);
+            if (newT && newT.trim() !== oldText) db.ref('msgs/' + key).update({ t: newT });
+        } else {
+            if (confirm("هل أنت متأكد من حذف الرسالة نهائياً؟")) db.ref('msgs/' + key).remove();
+        }
+    }
 </script>
 </body>
 </html>
