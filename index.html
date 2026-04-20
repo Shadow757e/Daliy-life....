@@ -109,7 +109,6 @@
 
         #nudge-msg { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: white; color: #000; padding: 15px 30px; border-radius: 50px; font-weight: 800; transition: 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 10001; }
 
-        /* القائمة الشيك المدمجة */
         #custom-menu {
             position: fixed; background: #12141a; border: 1px solid var(--hacker-green);
             border-radius: 12px; padding: 0; z-index: 30000; display: none;
@@ -127,7 +126,6 @@
         .menu-item.delete-item { color: #ff4d6d; }
         .menu-item.delete-item:hover { background: rgba(255, 77, 109, 0.1); }
 
-        /* ستايل التفاعل والرد */
         .reaction-container { position: absolute; bottom: -10px; background: #1a1c25; border: 1px solid var(--glass-border); border-radius: 10px; padding: 1px 5px; font-size: 0.75rem; z-index: 5; }
         .msg.يوسف .reaction-container { right: 10px; }
         .msg.مريم .reaction-container { left: 10px; }
@@ -224,6 +222,27 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // --- نظام الإشعارات (New) ---
+    function initNotifications() {
+        if ("Notification" in window) {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    console.log("إذن الإشعارات مفعّل");
+                }
+            });
+        }
+    }
+
+    function pushNotify(title, body) {
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, {
+                body: body,
+                icon: "https://cdn-icons-png.flaticon.com/512/2592/2592209.png"
+            });
+        }
+    }
+
+    // --- Firebase Listeners ---
     let pulseInterval;
     function startPulse() {
         const role = document.getElementById('user-role').value;
@@ -245,11 +264,10 @@
             if (d.sender !== document.getElementById('user-role').value) {
                 triggerVibrate([100, 50, 100]);
             }
-        } else {
-            heartBtn.classList.remove('heart-pulse');
-        }
+        } else { heartBtn.classList.remove('heart-pulse'); }
     });
 
+    // --- Terminal & Matrix ---
     const logContainer = document.getElementById('log-c');
     const termLines = ["Initializing System...", "Loading Neural Network...", "Bypassing Firewall...", "Access Granted."];
     let currentLine = 0;
@@ -275,18 +293,25 @@
     }
     setInterval(drawMatrix, 40);
 
+    // --- Authentication ---
     document.getElementById('pass-input-term').addEventListener('input', (e) => {
         let val = e.target.value.trim().replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
         if (val === "1212") {
             const screen = document.getElementById('hacker-screen'); triggerVibrate([100, 50, 100]);
             screen.classList.add('hacker-shake');
+            initNotifications(); // تفعيل الإشعارات فور الدخول
             setTimeout(() => {
                 screen.classList.remove('hacker-shake'); screen.classList.add('hacker-exit');
-                setTimeout(() => { screen.style.display = 'none'; document.getElementById('main-content').style.display = 'block'; syncRole(); updateDailyQuestion(); startLocationTracking(); }, 400);
+                setTimeout(() => { 
+                    screen.style.display = 'none'; 
+                    document.getElementById('main-content').style.display = 'block'; 
+                    syncRole(); updateDailyQuestion(); startLocationTracking(); 
+                }, 400);
             }, 300);
         }
     });
 
+    // --- Sensors & Shake ---
     let lastShake = 0;
     if (window.DeviceMotionEvent) {
         window.addEventListener('devicemotion', (e) => {
@@ -304,6 +329,7 @@
         const d = snap.val(); const myRole = document.getElementById('user-role').value;
         if(d && d.s !== myRole && (Date.now() - d.t < 2000)) {
             triggerVibrate([300, 100, 300, 100, 400]);
+            pushNotify("اهتزاز!", d.s + " بيهز الموبايل ليك! 🔥");
             const box = document.getElementById('nudge-msg'); box.innerText = d.s + " بيهز الموبايل! 📱🔥"; box.style.top = "20px";
             setTimeout(() => box.style.top = "-100px", 3000);
         }
@@ -343,10 +369,7 @@
         const activeTab = document.querySelector('.tab-btn.active');
         if(activeTab) { if(role === "يوسف") activeTab.classList.add('y-theme'); else activeTab.classList.remove('y-theme'); }
         document.getElementById('floating-heart').style.background = (role === "يوسف") ? "var(--hacker-green)" : "var(--nurse-red)";
-        
-        if(document.getElementById('chat').classList.contains('active')) {
-            updateSeenStatus();
-        }
+        if(document.getElementById('chat').classList.contains('active')) updateSeenStatus();
     }
 
     function showTab(id, btn) {
@@ -360,7 +383,7 @@
         }
     }
 
-    const start = new Date("2024-04-16T00:00:00");
+    const start = new Date("2025-04-16T00:00:00");
     setInterval(() => {
         const diff = new Date() - start; const d = Math.floor(diff/86400000);
         const h = String(Math.floor((diff/3600000)%24)).padStart(2,'0');
@@ -376,6 +399,8 @@
 
     db.ref('nudge').on('value', snap => {
         const d = snap.val(); if(d && (Date.now() - d.t < 5000)) {
+            const myRole = document.getElementById('user-role').value;
+            if(d.s !== myRole) pushNotify("Nudge!", d.s + " بيفكر فيكِ دلوقتي ❤️");
             const box = document.getElementById('nudge-msg'); const sound = document.getElementById('nudge-sound');
             box.innerText = d.s + " بيفكر فيكِ حالاً! ❤️"; box.style.top = "20px";
             try { sound.play(); triggerVibrate([200, 100, 200]); } catch(e) {}
@@ -434,11 +459,8 @@
         if(a.trim()) { db.ref('ans/'+r).set(a); alert("تم حفظ إجابتك السرية! 🔒"); document.getElementById('ans-in').value = ""; }
     }
 
-    // --- نظام الشات المطور ---
-    let selectedMsgKey = null;
-    let selectedMsgText = "";
-    let selectedMsgSender = "";
-    let replyToData = null;
+    // --- Chat System ---
+    let selectedMsgKey = null, selectedMsgText = "", selectedMsgSender = "", replyToData = null;
 
     document.getElementById('msg-input').addEventListener('input', () => {
         const u = document.getElementById('user-role').value;
@@ -451,9 +473,7 @@
         const data = snap.val(); const myRole = document.getElementById('user-role').value;
         const otherRole = (myRole === "يوسف") ? "مريم" : "يوسف";
         const statusDiv = document.getElementById('typing-status');
-        if (data && data[otherRole] && data[otherRole].isTyping) {
-            statusDiv.innerText = `${otherRole} يكتب الآن...`;
-        } else { statusDiv.innerText = ""; }
+        if (data && data[otherRole] && data[otherRole].isTyping) { statusDiv.innerText = `${otherRole} يكتب الآن...`; } else { statusDiv.innerText = ""; }
     });
 
     function updateSeenStatus() {
@@ -465,96 +485,58 @@
         const u = document.getElementById('user-role').value; const input = document.getElementById('msg-input');
         const btnIcon = document.querySelector('#moto-btn i'); const t = input.value;
         if(t.trim()) { 
-            triggerVibrate(40); 
-            btnIcon.classList.add('moto-active'); 
-            db.ref('msgs').push().set({
-                s: u, 
-                t: t, 
-                time: Date.now(),
-                reply: replyToData
-            }); 
-            input.value = ""; 
-            cancelReply();
+            triggerVibrate(40); btnIcon.classList.add('moto-active'); 
+            db.ref('msgs').push().set({ s: u, t: t, time: Date.now(), reply: replyToData }); 
+            input.value = ""; cancelReply();
             db.ref('typing/' + u).set({ isTyping: false });
             setTimeout(() => btnIcon.classList.remove('moto-active'), 400); 
         }
     }
 
-    // وظائف الرياكت والرد
-    function addReact(emoji) {
-        if (selectedMsgKey) {
-            db.ref('msgs/' + selectedMsgKey + '/react').set(emoji);
-            document.getElementById('custom-menu').style.display = 'none';
-            triggerVibrate(40);
-        }
-    }
+    function addReact(emoji) { if (selectedMsgKey) { db.ref('msgs/' + selectedMsgKey + '/react').set(emoji); document.getElementById('custom-menu').style.display = 'none'; triggerVibrate(40); } }
 
     function startReply() {
         replyToData = { s: selectedMsgSender, t: selectedMsgText };
         const preview = document.getElementById('reply-preview');
         document.getElementById('reply-preview-text').innerText = `رد على ${selectedMsgSender}: ${selectedMsgText.substring(0,25)}...`;
-        preview.style.display = 'block';
-        document.getElementById('custom-menu').style.display = 'none';
-        document.getElementById('msg-input').focus();
+        preview.style.display = 'block'; document.getElementById('custom-menu').style.display = 'none'; document.getElementById('msg-input').focus();
     }
 
-    function cancelReply() {
-        replyToData = null;
-        document.getElementById('reply-preview').style.display = 'none';
-    }
+    function cancelReply() { replyToData = null; document.getElementById('reply-preview').style.display = 'none'; }
 
-    db.ref('msgs').on('child_added', snap => renderMessage(snap));
-    db.ref('msgs').on('child_changed', snap => {
-        const msgDiv = document.querySelector(`[data-key="${snap.key}"]`);
-        if (msgDiv) {
-            const d = snap.val();
-            renderInnerMsg(msgDiv, d);
-        }
+    db.ref('msgs').on('child_added', snap => {
+        const d = snap.val(); const myRole = document.getElementById('user-role').value;
+        if(d.s !== myRole) pushNotify("رسالة جديدة من " + d.s, d.t);
+        renderMessage(snap);
     });
-    db.ref('msgs').on('child_removed', snap => {
-        const msgDiv = document.querySelector(`[data-key="${snap.key}"]`);
-        if (msgDiv) msgDiv.remove();
-    });
+    db.ref('msgs').on('child_changed', snap => { const msgDiv = document.querySelector(`[data-key="${snap.key}"]`); if (msgDiv) renderInnerMsg(msgDiv, snap.val()); });
+    db.ref('msgs').on('child_removed', snap => { const msgDiv = document.querySelector(`[data-key="${snap.key}"]`); if (msgDiv) msgDiv.remove(); });
 
     function renderInnerMsg(div, d) {
         let html = "";
-        if (d.reply) {
-            html += `<div class="reply-content"><b>${d.reply.s}:</b> ${d.reply.t.substring(0,30)}</div>`;
-        }
+        if (d.reply) html += `<div class="reply-content"><b>${d.reply.s}:</b> ${d.reply.t.substring(0,30)}</div>`;
         html += `<b>${d.s}:</b><br>`;
-        if (d.t.match(/\.(jpeg|jpg|gif|png)$/) != null || d.t.startsWith('http')) {
-            html += `<img src="${d.t}" style="width:100%; border-radius:10px; margin-top:5px;" onerror="this.outerHTML='${d.t}'">`;
-        } else {
-            html += d.t;
-        }
+        if (d.t.match(/\.(jpeg|jpg|gif|png)$/) != null || d.t.startsWith('http')) { html += `<img src="${d.t}" style="width:100%; border-radius:10px; margin-top:5px;" onerror="this.outerHTML='${d.t}'">`; } else { html += d.t; }
         if (d.react) html += `<div class="reaction-container">${d.react}</div>`;
-        div.innerHTML = html;
-        updateSeenMarkers(div, d.time, d.s);
+        div.innerHTML = html; updateSeenMarkers(div, d.time, d.s);
     }
 
     function renderMessage(snap) {
-        const d = snap.val(); const key = snap.key;
-        const myRole = document.getElementById('user-role').value;
+        const d = snap.val(); const key = snap.key; const myRole = document.getElementById('user-role').value;
         const div = document.createElement('div'); div.className = `msg ${d.s}`;
-        div.setAttribute('data-key', key);
-        div.setAttribute('data-time', d.time);
-        
+        div.setAttribute('data-key', key); div.setAttribute('data-time', d.time);
         renderInnerMsg(div, d);
-        
         let timer;
         div.ontouchstart = (e) => timer = setTimeout(() => handleMsgAction(key, d.t, e, d.s), 700);
         div.ontouchend = () => clearTimeout(timer);
         div.oncontextmenu = (e) => { e.preventDefault(); handleMsgAction(key, d.t, e, d.s); };
-
         const cb = document.getElementById('chat-box'); cb.appendChild(div); cb.scrollTop = cb.scrollHeight;
         if (d.s !== myRole) triggerVibrate(100);
     }
 
     function updateSeenMarkers(m, msgTime, sender) {
         db.ref('last_seen').once('value', snap => {
-            const seenData = snap.val();
-            const role = sender;
-            const otherRole = (role === 'يوسف') ? 'مريم' : 'يوسف';
+            const seenData = snap.val(); const otherRole = (sender === 'يوسف') ? 'مريم' : 'يوسف';
             if(seenData && seenData[otherRole] && seenData[otherRole] > msgTime) {
                 if(!m.querySelector('.seen-status')) {
                     const s = document.createElement('span'); s.className = 'seen-status';
@@ -568,9 +550,7 @@
     db.ref('last_seen').on('value', snap => {
         const seenData = snap.val();
         document.querySelectorAll('.msg').forEach(m => {
-            const msgTime = m.getAttribute('data-time');
-            const sender = m.classList.contains('يوسف') ? 'يوسف' : 'مريم';
-            const otherRole = (sender === 'يوسف') ? 'مريم' : 'يوسف';
+            const msgTime = m.getAttribute('data-time'), sender = m.classList.contains('يوسف') ? 'يوسف' : 'مريم', otherRole = (sender === 'يوسف') ? 'مريم' : 'يوسف';
             if(seenData && seenData[otherRole] && seenData[otherRole] > msgTime) {
                 if(!m.querySelector('.seen-status')) {
                     const s = document.createElement('span'); s.className = 'seen-status';
@@ -583,35 +563,18 @@
 
     function handleMsgAction(key, oldText, e, sender) {
         selectedMsgKey = key; selectedMsgText = oldText; selectedMsgSender = sender;
-        const myRole = document.getElementById('user-role').value;
-        const menu = document.getElementById('custom-menu');
-        
-        // إخفاء التعديل والحذف لو مش رسالتك
+        const myRole = document.getElementById('user-role').value; const menu = document.getElementById('custom-menu');
         document.getElementById('menu-edit').style.display = (sender === myRole) ? 'flex' : 'none';
         document.getElementById('menu-delete').style.display = (sender === myRole) ? 'flex' : 'none';
-
         menu.style.display = 'block';
-        let x = (e.pageX || (e.touches ? e.touches[0].pageX : 0));
-        let y = (e.pageY || (e.touches ? e.touches[0].pageY : 0));
-        menu.style.left = Math.min(x, window.innerWidth - 160) + 'px';
-        menu.style.top = Math.min(y, window.innerHeight - 200) + 'px';
+        let x = (e.pageX || (e.touches ? e.touches[0].pageX : 0)), y = (e.pageY || (e.touches ? e.touches[0].pageY : 0));
+        menu.style.left = Math.min(x, window.innerWidth - 160) + 'px'; menu.style.top = Math.min(y, window.innerHeight - 200) + 'px';
         triggerVibrate(50);
     }
 
-    window.onclick = (e) => {
-        if(!e.target.closest('.msg') && !e.target.closest('#custom-menu')) {
-            document.getElementById('custom-menu').style.display = 'none';
-        }
-    };
-
-    document.getElementById('menu-edit').onclick = () => {
-        const newT = prompt("عدل رسالتك:", selectedMsgText);
-        if (newT && newT.trim() !== selectedMsgText) db.ref('msgs/' + selectedMsgKey).update({ t: newT });
-    };
-
-    document.getElementById('menu-delete').onclick = () => {
-        if (confirm("حذف الرسالة نهائياً؟")) db.ref('msgs/' + selectedMsgKey).remove();
-    };
+    window.onclick = (e) => { if(!e.target.closest('.msg') && !e.target.closest('#custom-menu')) document.getElementById('custom-menu').style.display = 'none'; };
+    document.getElementById('menu-edit').onclick = () => { const newT = prompt("عدل رسالتك:", selectedMsgText); if (newT && newT.trim() !== selectedMsgText) db.ref('msgs/' + selectedMsgKey).update({ t: newT }); };
+    document.getElementById('menu-delete').onclick = () => { if (confirm("حذف الرسالة نهائياً؟")) db.ref('msgs/' + selectedMsgKey).remove(); };
 </script>
 </body>
 </html>
