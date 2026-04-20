@@ -12,7 +12,7 @@
     <meta name="theme-color" content="#08090b">
     
     <link rel="apple-touch-icon" href="love.jpg">
-    <link rel="icon" href="love.jpg"type="image/jpeg">
+    <link rel="icon" href="love.jpg" type="image/jpeg">
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -87,8 +87,10 @@
         
         #chat-box, #wish-list { height: 320px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 25px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--glass-border); scroll-behavior: smooth; }
         .msg { padding: 10px 15px; border-radius: 18px; max-width: 85%; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; position: relative; }
+        /* الكلاسات دي بقت تعبر عن "يمين" و "يسار" */
         .msg.يوسف { align-self: flex-end; background: #00331a; color: var(--hacker-green); border-bottom-right-radius: 4px; }
         .msg.مريم { align-self: flex-start; background: #330011; color: var(--nurse-red); border-bottom-left-radius: 4px; }
+        
         .input-group { display: flex; gap: 8px; margin-top: 10px; }
         .input-group input { flex: 1; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: white; padding: 12px 18px; border-radius: 15px; outline: none; font-family: 'Cairo'; }
         
@@ -222,23 +224,16 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- نظام الإشعارات (New) ---
+    // --- نظام الإشعارات ---
     function initNotifications() {
         if ("Notification" in window) {
-            Notification.requestPermission().then(permission => {
-                if (permission === "granted") {
-                    console.log("إذن الإشعارات مفعّل");
-                }
-            });
+            Notification.requestPermission();
         }
     }
 
     function pushNotify(title, body) {
         if ("Notification" in window && Notification.permission === "granted") {
-            new Notification(title, {
-                body: body,
-                icon: "https://cdn-icons-png.flaticon.com/512/2592/2592209.png"
-            });
+            new Notification(title, { body: body, icon: "love.jpg" });
         }
     }
 
@@ -299,17 +294,14 @@
         if (val === "1212") {
             const screen = document.getElementById('hacker-screen'); triggerVibrate([100, 50, 100]);
             screen.classList.add('hacker-shake');
-            initNotifications(); // تفعيل الإشعارات فور الدخول
+            initNotifications();
             setTimeout(() => {
                 screen.classList.remove('hacker-shake'); screen.classList.add('hacker-exit');
                 setTimeout(() => { 
                     screen.style.display = 'none'; 
                     document.getElementById('main-content').style.display = 'block'; 
-                    
-                    // --- حفظ واسترجاع المستخدم (تعديل 1) ---
                     const savedRole = localStorage.getItem('myUserRole');
                     if(savedRole) document.getElementById('user-role').value = savedRole;
-
                     syncRole(); updateDailyQuestion(); startLocationTracking(); 
                 }, 400);
             }, 300);
@@ -334,7 +326,6 @@
         const d = snap.val(); const myRole = document.getElementById('user-role').value;
         if(d && d.s !== myRole && (Date.now() - d.t < 2000)) {
             triggerVibrate([300, 100, 300, 100, 400]);
-            pushNotify("اهتزاز!", d.s + " بيهز الموبايل ليك! 🔥");
             const box = document.getElementById('nudge-msg'); box.innerText = d.s + " بيهز الموبايل! 📱🔥"; box.style.top = "20px";
             setTimeout(() => box.style.top = "-100px", 3000);
         }
@@ -365,15 +356,23 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
+    // --- وظيفة الـ Sync المعدلة لإعادة ترتيب الشات فوراً ---
     function syncRole() {
         const role = document.getElementById('user-role').value;
-        // --- حفظ الاختيار (تعديل 2) ---
         localStorage.setItem('myUserRole', role);
 
         document.getElementById('m-mood-ctrl').style.display = (role === "مريم") ? "flex" : "none";
         document.getElementById('y-mood-ctrl').style.display = (role === "يوسف") ? "flex" : "none";
         document.getElementById('y-to-m-ctrl').style.display = (role === "يوسف") ? "flex" : "none";
         document.getElementById('m-to-y-ctrl').style.display = (role === "مريم") ? "flex" : "none";
+        
+        // إعادة تنظيم الرسائل بناءً على المستخدم الحالي
+        const messages = document.querySelectorAll('.msg');
+        messages.forEach(msgDiv => {
+            const sender = msgDiv.getAttribute('data-sender');
+            msgDiv.className = `msg ${sender === role ? 'يوسف' : 'مريم'}`;
+        });
+
         const activeTab = document.querySelector('.tab-btn.active');
         if(activeTab) { if(role === "يوسف") activeTab.classList.add('y-theme'); else activeTab.classList.remove('y-theme'); }
         document.getElementById('floating-heart').style.background = (role === "يوسف") ? "var(--hacker-green)" : "var(--nurse-red)";
@@ -391,9 +390,12 @@
         }
     }
 
+    // --- عداد الوقت الدقيق (تم إصلاح حساب الأيام) ---
     const start = new Date("2025-04-16T00:00:00");
     setInterval(() => {
-        const diff = new Date() - start; const d = Math.floor(diff/86400000);
+        const now = new Date();
+        const diff = now - start; 
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24)); // جبر كسر اليوم لضمان الدقة
         const h = String(Math.floor((diff/3600000)%24)).padStart(2,'0');
         const m = String(Math.floor((diff/60000)%60)).padStart(2,'0');
         const s = String(Math.floor((diff/1000)%60)).padStart(2,'0');
@@ -529,10 +531,11 @@
         div.innerHTML = html; updateSeenMarkers(div, d.time, d.s);
     }
 
+    // --- دالة رسم الرسالة المعدلة لتخزين اسم المرسل في Attribute ---
     function renderMessage(snap) {
         const d = snap.val(); const key = snap.key; const myRole = document.getElementById('user-role').value;
         const div = document.createElement('div'); 
-        // --- تحديد الاتجاه بناءً على المستخدم (تعديل 3) ---
+        div.setAttribute('data-sender', d.s); // تخزين المرسل الأصلي
         div.className = `msg ${d.s === myRole ? 'يوسف' : 'مريم'}`;
         div.setAttribute('data-key', key); div.setAttribute('data-time', d.time);
         renderInnerMsg(div, d);
@@ -560,7 +563,7 @@
     db.ref('last_seen').on('value', snap => {
         const seenData = snap.val();
         document.querySelectorAll('.msg').forEach(m => {
-            const msgTime = m.getAttribute('data-time'), sender = m.classList.contains('يوسف') ? 'يوسف' : 'مريم', otherRole = (sender === 'يوسف') ? 'مريم' : 'يوسف';
+            const msgTime = m.getAttribute('data-time'), sender = m.getAttribute('data-sender'), otherRole = (sender === 'يوسف') ? 'مريم' : 'يوسف';
             if(seenData && seenData[otherRole] && seenData[otherRole] > msgTime) {
                 if(!m.querySelector('.seen-status')) {
                     const s = document.createElement('span'); s.className = 'seen-status';
