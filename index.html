@@ -85,9 +85,9 @@
         .section.active { display: block; animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
-        #chat-box, #wish-list { height: 320px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 25px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--glass-border); scroll-behavior: smooth; }
+        #chat-box, #wish-list, #dynamic-tasks-m, #dynamic-tasks-y, #memories-list { height: 320px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 25px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--glass-border); scroll-behavior: smooth; }
+        #memories-list { height: 400px; }
         .msg { padding: 10px 15px; border-radius: 18px; max-width: 85%; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; position: relative; }
-        /* الكلاسات دي بقت تعبر عن "يمين" و "يسار" */
         .msg.يوسف { align-self: flex-end; background: #00331a; color: var(--hacker-green); border-bottom-right-radius: 4px; }
         .msg.مريم { align-self: flex-start; background: #330011; color: var(--nurse-red); border-bottom-left-radius: 4px; }
         
@@ -128,16 +128,29 @@
         .menu-item.delete-item { color: #ff4d6d; }
         .menu-item.delete-item:hover { background: rgba(255, 77, 109, 0.1); }
 
-        .reaction-container { position: absolute; bottom: -10px; background: #1a1c25; border: 1px solid var(--glass-border); border-radius: 10px; padding: 1px 5px; font-size: 0.75rem; z-index: 5; }
+        .reaction-container { position: absolute; bottom: -10px; background: #1a1c25; border: 1px solid var(--glass-border); border-radius: 10px; padding: 1px 5px; font-size: 0.75rem; z-index: 5; animation: popReact 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .msg.يوسف .reaction-container { right: 10px; }
         .msg.مريم .reaction-container { left: 10px; }
+        @keyframes popReact { from { transform: scale(0); } to { transform: scale(1); } }
         
-        .reply-content { background: rgba(255,255,255,0.1); border-left: 3px solid var(--hacker-green); padding: 5px 8px; border-radius: 5px; margin-bottom: 5px; font-size: 0.75rem; opacity: 0.8; }
+        .reply-content { background: rgba(255,255,255,0.1); border-left: 3px solid var(--hacker-green); padding: 5px 8px; border-radius: 5px; margin-bottom: 5px; font-size: 0.75rem; opacity: 0.8; cursor: pointer; }
         
         #reply-preview { display: none; background: #111; padding: 10px; border-top: 2px solid var(--hacker-green); color: #ccc; font-size: 0.8rem; position: relative; }
         #typing-status { font-size: 0.75rem; color: var(--hacker-green); margin-bottom: 5px; height: 15px; opacity: 0.8; font-style: italic; padding-right: 10px; }
         .seen-status { font-size: 0.65rem; display: block; text-align: left; opacity: 0.6; margin-top: 2px; }
         .msg.مريم .seen-status { text-align: right; }
+
+        /* تنسيقات إضافية للمهام المشطوبة والذكريات */
+        .task-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: rgba(255,255,255,0.04); border-radius: 15px; border: 1px solid var(--glass-border); transition: 0.3s; }
+        .task-item.completed { opacity: 0.5; background: rgba(0, 255, 136, 0.03); }
+        .task-item.completed span { text-decoration: line-through; color: #888; }
+        .task-item i { cursor: pointer; font-size: 1.2rem; transition: 0.2s; }
+        .task-item i:hover { transform: scale(1.1); }
+        
+        .memory-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 25px; padding: 15px; display: flex; flex-direction: column; gap: 10px; position: relative; }
+        .memory-card img { width: 100%; border-radius: 20px; max-height: 250px; object-fit: cover; }
+        .memory-meta { font-size: 0.75rem; color: #777; display: flex; justify-content: space-between; }
+        .memory-delete { position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.6); border: none; color: var(--nurse-red); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -186,6 +199,7 @@
         <button class="tab-btn active" onclick="showTab('mood', this)">المود</button>
         <button class="tab-btn" onclick="showTab('tasks', this)">المهام</button>
         <button class="tab-btn" onclick="showTab('wishes', this)">الأمنيات</button>
+        <button class="tab-btn" onclick="showTab('memories', this)">ذكرياتنا</button>
         <button class="tab-btn" onclick="showTab('questions', this)">سؤال</button>
         <button class="tab-btn" onclick="showTab('chat', this)">الشات</button>
     </div>
@@ -199,11 +213,44 @@
         <div class="card m-border"><h3 style="color:var(--nurse-red); margin:0; font-size:0.8rem;">مود مريم 🩺</h3><p id="m-mood-display">...</p><div id="m-mood-ctrl" class="input-group" style="display:none"><input type="text" id="m-mood-text" placeholder="مودِك دلوقتي؟"><button class="tab-btn active" onclick="updateMood('m')">تحديث</button></div></div>
         <div class="card y-border"><h3 style="color:var(--hacker-green); margin:0; font-size:0.8rem;">مود يوسف 🧑‍💻</h3><p id="y-mood-display">...</p><div id="y-mood-ctrl" class="input-group" style="display:none"><input type="text" id="y-mood-text" placeholder="مودك دلوقتي؟"><button class="tab-btn active y-theme" onclick="updateMood('y')">تحديث</button></div></div>
     </div>
+    
+    <!-- نظام المهام الديناميكي المطور -->
     <div id="tasks" class="section">
-        <div class="card m-border"><b style="color:var(--nurse-red);">مهمة مريومهع 🩺:</b><p id="m-task-display">...</p><div id="y-to-m-ctrl" class="input-group" style="display:none"><input type="text" id="input-to-m" placeholder="أعطها مهمة..."><button class="tab-btn active y-theme" onclick="saveTask('m')">إرسال</button></div></div>
-        <div class="card y-border"><b style="color:var(--hacker-green);">مهمة سفسوفهع 🧑‍💻:</b><p id="y-task-display">...</p><div id="m-to-y-ctrl" class="input-group" style="display:none"><input type="text" id="input-to-y" placeholder="أعطه مهمة..."><button class="tab-btn active" onclick="saveTask('y')">إرسال</button></div></div>
+        <div class="card m-border">
+            <b style="color:var(--nurse-red);">قائمة مهام مريومهع 🩺:</b>
+            <div id="dynamic-tasks-m" style="height:160px; margin-top:10px;"></div>
+            <div id="y-to-m-ctrl" class="input-group" style="display:none">
+                <input type="text" id="input-to-m" placeholder="أعطها مهمة جديدة...">
+                <button class="tab-btn active y-theme" onclick="saveTask('m')">إرسال</button>
+            </div>
+        </div>
+        <div class="card y-border">
+            <b style="color:var(--hacker-green);">قائمة مهام سفسوفهع 🧑‍💻:</b>
+            <div id="dynamic-tasks-y" style="height:160px; margin-top:10px;"></div>
+            <div id="m-to-y-ctrl" class="input-group" style="display:none">
+                <input type="text" id="input-to-y" placeholder="أعطه مهمة جديدة...">
+                <button class="tab-btn active" onclick="saveTask('y')">إرسال</button>
+            </div>
+        </div>
     </div>
+    
     <div id="wishes" class="section"><div class="card"><h3 style="color:var(--nurse-red); margin-top:0;">صندوق الأمنيات ✨</h3><div id="wish-list"></div><div class="input-group"><input type="text" id="wish-in" placeholder="أمنية جديدة..."><button class="tab-btn active y-theme" onclick="addWish()">إضافة</button></div></div></div>
+    
+    <!-- سكشن الذكريات الجديد -->
+    <div id="memories" class="section">
+        <div class="card">
+            <h3 style="color:var(--hacker-green); margin-top:0;">صندوق ذكرياتنا الدافئة 📸</h3>
+            <div id="memories-list"></div>
+            <div class="input-group" style="flex-direction: column; gap: 8px;">
+                <input type="text" id="memory-img" placeholder="رابط الصورة (URL)...">
+                <div style="display:flex; gap:8px; width:100%;">
+                    <input type="text" id="memory-text" placeholder="اكتب كلمة للذكرى...">
+                    <button class="tab-btn active y-theme" onclick="addMemory()" style="flex:none; width:80px;">حفظ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="questions" class="section"><div class="card" style="text-align: center;"><h3 id="daily-q-text" style="color:var(--hacker-green); margin-bottom:15px; min-height: 60px;">...</h3><textarea id="ans-in" style="width:100%; height:100px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); color:white; border-radius:15px; padding:15px; font-family:'Cairo'; resize:none;" placeholder="إجابتك السرية..."></textarea><button class="tab-btn active y-theme" style="margin-top:10px; width:100%;" onclick="saveAns()">حفظ الإجابة</button></div></div>
     <div id="chat" class="section">
         <div id="typing-status"></div>
@@ -366,7 +413,6 @@
         document.getElementById('y-to-m-ctrl').style.display = (role === "يوسف") ? "flex" : "none";
         document.getElementById('m-to-y-ctrl').style.display = (role === "مريم") ? "flex" : "none";
         
-        // إعادة تنظيم الرسائل بناءً على المستخدم الحالي
         const messages = document.querySelectorAll('.msg');
         messages.forEach(msgDiv => {
             const sender = msgDiv.getAttribute('data-sender');
@@ -395,7 +441,7 @@
     setInterval(() => {
         const now = new Date();
         const diff = now - start; 
-        const d = Math.floor(diff / (1000 * 60 * 60 * 24)); // جبر كسر اليوم لضمان الدقة
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24)); 
         const h = String(Math.floor((diff/3600000)%24)).padStart(2,'0');
         const m = String(Math.floor((diff/60000)%60)).padStart(2,'0');
         const s = String(Math.floor((diff/1000)%60)).padStart(2,'0');
@@ -428,15 +474,43 @@
         document.getElementById('y-mood-display').innerText = v.y; document.getElementById('m-mood-display').innerText = v.m;
     });
 
+    // --- ربط نظام المهام الديناميكي بالـ Firebase (.push) ---
     function saveTask(target) {
-        triggerVibrate(); const inp = target === 'm' ? 'input-to-m' : 'input-to-y';
-        const val = document.getElementById(inp).value; if(val.trim()) db.ref('tasks/' + target).set(val);
+        triggerVibrate(); 
+        const inp = target === 'm' ? 'input-to-m' : 'input-to-y';
+        const val = document.getElementById(inp).value; 
+        if(val.trim()) {
+            db.ref('dynamic_tasks/' + target).push().set({ text: val, done: false });
+            document.getElementById(inp).value = "";
+        }
     }
 
-    db.ref('tasks').on('value', s => {
-        const d = s.val() || {y: 'لا يوجد', m: 'لا يوجد'};
-        document.getElementById('y-task-display').innerText = d.y; document.getElementById('m-task-display').innerText = d.m;
-    });
+    function listenToTasks(target, elementId) {
+        db.ref('dynamic_tasks/' + target).on('value', snap => {
+            const container = document.getElementById(elementId);
+            container.innerHTML = "";
+            snap.forEach(child => {
+                const item = child.val();
+                const div = document.createElement('div');
+                div.className = `task-item ${item.done ? 'completed' : ''}`;
+                div.innerHTML = `
+                    <span>${item.text}</span>
+                    <i class="fas ${item.done ? 'fa-check-circle' : 'fa-circle'}" 
+                       onclick="toggleTask('${target}', '${child.key}', ${item.done})" 
+                       style="color: ${item.done ? 'var(--hacker-green)' : '#777'}"></i>
+                `;
+                container.appendChild(div);
+            });
+        });
+    }
+    listenToTasks('m', 'dynamic-tasks-m');
+    listenToTasks('y', 'dynamic-tasks-y');
+
+    function toggleTask(target, key, status) {
+        triggerVibrate(); 
+        if(!status) confetti({ particleCount: 80, spread: 60 });
+        db.ref(`dynamic_tasks/${target}/${key}`).update({ done: !status });
+    }
 
     function addWish() {
         triggerVibrate(); const t = document.getElementById('wish-in').value;
@@ -458,6 +532,41 @@
         db.ref('wishes/'+k).update({ d: !st });
     }
 
+    // --- نظام صندوق الذكريات الجديد ---
+    function addMemory() {
+        triggerVibrate();
+        const imgUrl = document.getElementById('memory-img').value.trim();
+        const text = document.getElementById('memory-text').value.trim();
+        const role = document.getElementById('user-role').value;
+        if(imgUrl && text) {
+            db.ref('memories').push().set({ img: imgUrl, txt: text, sender: role, time: Date.now() });
+            document.getElementById('memory-img').value = "";
+            document.getElementById('memory-text').value = "";
+        }
+    }
+
+    db.ref('memories').on('value', snap => {
+        const list = document.getElementById('memories-list');
+        list.innerHTML = "";
+        const myRole = document.getElementById('user-role').value;
+        snap.forEach(child => {
+            const data = child.val();
+            const dateStr = new Date(data.time).toLocaleDateString('ar-EG', {month:'short', day:'numeric'});
+            const div = document.createElement('div');
+            div.className = "memory-card";
+            div.innerHTML = `
+                <img src="${data.img}" onerror="this.src='love.jpg'">
+                <p style="margin:5px 0; font-weight:600; font-size:0.95rem;">${data.txt}</p>
+                <div class="memory-meta"><span>بواسطة: ${data.sender}</span> <span>${dateStr}</span></div>
+                ${data.sender === myRole ? `<button class="memory-delete" onclick="deleteMemory('${child.key}')"><i class="fas fa-trash"></i></button>` : ''}
+            `;
+            list.appendChild(div);
+        });
+        list.scrollTop = list.scrollHeight;
+    });
+
+    function deleteMemory(key) { if(confirm("هل تريد حذف هذه الذكرى نهائياً؟")) { triggerVibrate(); db.ref('memories/'+key).remove(); } }
+
     const qs = ["أكثر شيء يسعدك في يومك؟", "أجمل ذكرى لنا حتى الآن؟", "إيه أكتر ذكرى من طفولتك لسه مأثرة فيك؟", "لو معاك تذكرة سفر لمكان واحد بس، هتختار تروح فين؟", "إيه هو يومك المثالي؟", "إيه أكتر كلمة بتفرحك لما تسمعها مني؟"];
     function updateDailyQuestion() {
         const index = Math.floor((new Date().setHours(0,0,0,0)/86400000)%qs.length);
@@ -469,7 +578,7 @@
         if(a.trim()) { db.ref('ans/'+r).set(a); alert("تم حفظ إجابتك السرية! 🔒"); document.getElementById('ans-in').value = ""; }
     }
 
-    // --- Chat System ---
+    // --- Chat System المطور مع الـ Real-time Reactions & Auto-Scroll Replies ---
     let selectedMsgKey = null, selectedMsgText = "", selectedMsgSender = "", replyToData = null;
 
     document.getElementById('msg-input').addEventListener('input', () => {
@@ -506,13 +615,24 @@
     function addReact(emoji) { if (selectedMsgKey) { db.ref('msgs/' + selectedMsgKey + '/react').set(emoji); document.getElementById('custom-menu').style.display = 'none'; triggerVibrate(40); } }
 
     function startReply() {
-        replyToData = { s: selectedMsgSender, t: selectedMsgText };
+        replyToData = { s: selectedMsgSender, t: selectedMsgText, key: selectedMsgKey };
         const preview = document.getElementById('reply-preview');
         document.getElementById('reply-preview-text').innerText = `رد على ${selectedMsgSender}: ${selectedMsgText.substring(0,25)}...`;
         preview.style.display = 'block'; document.getElementById('custom-menu').style.display = 'none'; document.getElementById('msg-input').focus();
     }
 
     function cancelReply() { replyToData = null; document.getElementById('reply-preview').style.display = 'none'; }
+
+    // دالة الانتقال السريع للرسالة الأصلية عند الضغط على الرد
+    function scrollToMessage(key) {
+        const target = document.querySelector(`[data-key="${key}"]`);
+        if(target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.style.transition = '0.5s';
+            target.style.background = '#00ff8844';
+            setTimeout(() => target.style.background = target.classList.contains('يوسف') ? '#00331a' : '#330011', 1500);
+        }
+    }
 
     db.ref('msgs').on('child_added', snap => {
         const d = snap.val(); const myRole = document.getElementById('user-role').value;
@@ -524,18 +644,17 @@
 
     function renderInnerMsg(div, d) {
         let html = "";
-        if (d.reply) html += `<div class="reply-content"><b>${d.reply.s}:</b> ${d.reply.t.substring(0,30)}</div>`;
+        if (d.reply) html += `<div class="reply-content" onclick="scrollToMessage('${d.reply.key || ''}')"><b>${d.reply.s}:</b> ${d.reply.t.substring(0,30)}</div>`;
         html += `<b>${d.s}:</b><br>`;
         if (d.t.match(/\.(jpeg|jpg|gif|png)$/) != null || d.t.startsWith('http')) { html += `<img src="${d.t}" style="width:100%; border-radius:10px; margin-top:5px;" onerror="this.outerHTML='${d.t}'">`; } else { html += d.t; }
         if (d.react) html += `<div class="reaction-container">${d.react}</div>`;
         div.innerHTML = html; updateSeenMarkers(div, d.time, d.s);
     }
 
-    // --- دالة رسم الرسالة المعدلة لتخزين اسم المرسل في Attribute ---
     function renderMessage(snap) {
         const d = snap.val(); const key = snap.key; const myRole = document.getElementById('user-role').value;
         const div = document.createElement('div'); 
-        div.setAttribute('data-sender', d.s); // تخزين المرسل الأصلي
+        div.setAttribute('data-sender', d.s); 
         div.className = `msg ${d.s === myRole ? 'يوسف' : 'مريم'}`;
         div.setAttribute('data-key', key); div.setAttribute('data-time', d.time);
         renderInnerMsg(div, d);
