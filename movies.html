@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Evil/Olivia - Movies & Radio</title>
+    
+    <meta name="theme-color" content="#08090b">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        :root { 
+            --hacker-green: #00ff88; 
+            --nurse-red: #ff4d6d; 
+            --dark-bg: #08090b; 
+            --glass-bg: rgba(255, 255, 255, 0.03); 
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glow-green: 0 0 20px rgba(0, 255, 136, 0.2);
+            --glow-red: 0 0 20px rgba(255, 77, 109, 0.2);
+        }
+
+        body { 
+            background: radial-gradient(circle at 20% 20%, #1a1c25 0%, var(--dark-bg) 50%);
+            font-family: 'Cairo', sans-serif; 
+            color: #e0e0e0; 
+            margin: 0; 
+            padding: 0; 
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        ::-webkit-scrollbar { display: none; }
+
+        .container { max-width: 480px; margin: auto; padding: 20px; padding-bottom: 50px; }
+        
+        .header-area { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
+        .back-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: #fff; padding: 10px 15px; border-radius: 15px; text-decoration: none; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .back-btn:hover { background: rgba(255,255,255,0.1); }
+
+        .card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 30px; padding: 22px; margin-bottom: 20px; backdrop-filter: blur(10px); }
+        .m-border { border-right: 5px solid var(--nurse-red); }
+        .y-border { border-right: 5px solid var(--hacker-green); }
+        
+        h3 { margin-top: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+        
+        .input-group { display: flex; gap: 8px; margin-top: 15px; }
+        .input-group input { flex: 1; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: white; padding: 12px 18px; border-radius: 15px; outline: none; font-family: 'Cairo'; }
+        
+        .btn { padding: 10px 20px; border: none; border-radius: 15px; font-weight: 800; cursor: pointer; transition: 0.3s; font-family: 'Cairo'; }
+        .btn-green { background: var(--hacker-green); color: #000; box-shadow: var(--glow-green); }
+        .btn-red { background: var(--nurse-red); color: #fff; box-shadow: var(--glow-red); }
+        
+        /* راديو ستايل */
+        .radio-status-box { background: rgba(0,0,0,0.3); border: 1px dashed var(--glass-border); padding: 15px; border-radius: 20px; text-align: center; margin-top: 15px; }
+        .live-pulse { width: 10px; height: 10px; background: #ff0000; border-radius: 50%; display: inline-block; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.4; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* قائمة الأفلام ستايل */
+        .movies-container { height: 220px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 20px; padding: 10px; margin-top: 10px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 8px; }
+        .movie-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(255,255,255,0.04); border-radius: 12px; font-size: 0.95rem; border: 1px solid transparent; }
+        .movie-item.matched { background: rgba(0, 255, 136, 0.08); border-color: var(--hacker-green); animation: matchGlow 2s infinite alternate; }
+        @keyframes matchGlow { from { box-shadow: 0 0 5px rgba(0,255,136,0.1); } to { box-shadow: 0 0 15px rgba(0,255,136,0.3); } }
+        .movie-item i { cursor: pointer; color: var(--nurse-red); transition: 0.2s; }
+        .movie-item i:hover { transform: scale(1.2); }
+
+        .match-alert { background: linear-gradient(135deg, #00331a, #001a08); border: 1px solid var(--hacker-green); color: var(--hacker-green); padding: 15px; border-radius: 20px; text-align: center; font-weight: bold; font-size: 1rem; margin-bottom: 20px; display: none; box-shadow: var(--glow-green); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div class="header-area">
+        <h2 style="margin:0; font-size:1.3rem; font-weight:800;">السينما والراديو اللحظي 🍿</h2>
+        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> الرجوع</a>
+    </div>
+
+    <input type="hidden" id="current-role" value="يوسف">
+
+    <div class="card y-border">
+        <h3><i class="fas fa-headset" style="color:var(--hacker-green);"></i> الراديو اللحظي (Listening to..)</h3>
+        <p style="font-size:0.8rem; color:#888; margin:0;">شارك التراك اللي بتسمعه حالياً مع الطرف التاني عشان يسمعه معاك في نفس اللحظة!</p>
+        
+        <div class="input-group">
+            <input type="text" id="radio-input" placeholder="اسم الأغنية + الرابط اللي بتسمعه...">
+            <button class="btn btn-green" onclick="updateRadio()">بث الآن</button>
+        </div>
+
+        <div class="radio-status-box">
+            <div id="radio-display">جاري تحميل البث الحالي...</div>
+        </div>
+    </div>
+
+    <div id="match-box" class="match-alert">
+        🎉 واو! حصلت مطابقة! إنتوا الاتنين عاوزين تشوفوا فيلم: <br><span id="match-movie-name" style="font-size:1.3rem; display:block; margin-top:5px;"></span>
+    </div>
+
+    <div class="card y-border">
+        <h3><i class="fas fa-film" style="color:var(--hacker-green);"></i> قائمة سهرة يوسف 🧑‍💻</h3>
+        <div class="movies-container" id="y-movies-list"></div>
+        <div class="input-group" id="y-input-group" style="display:none;">
+            <input type="text" id="y-movie-in" placeholder="اسم فيلم رعب أو خيال علمي...">
+            <button class="btn btn-green" onclick="addMovie('y')">إضافة</button>
+        </div>
+    </div>
+
+    <div class="card m-border">
+        <h3><i class="fas fa-film" style="color:var(--nurse-red);"></i> قائمة سهرة مريم 🩺</h3>
+        <div class="movies-container" id="m-movies-list"></div>
+        <div class="input-group" id="m-input-group" style="display:none;">
+            <input type="text" id="m-movie-in" placeholder="اسم الفيلم اللي نفسك تشوفيه...">
+            <button class="btn btn-red" onclick="addMovie('m')">إضافة</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ربط الفايربيس بنفس الداتا بيز بتاعتك
+    const firebaseConfig = { databaseURL: "https://youssef-mariam-default-rtdb.firebaseio.com/" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // استدعاء الهوية اللي متسجلة في الصفحة الأولى تلقائياً
+    const savedRole = localStorage.getItem('myUserRole') || "يوسف";
+    document.getElementById('current-role').value = savedRole;
+
+    // إظهار سكشن الإدخال الخاص باللي فاتح الأبلكيشن بس
+    if(savedRole === "يوسف") {
+        document.getElementById('y-input-group').style.display = "flex";
+    } else {
+        document.getElementById('m-input-group').style.display = "flex";
+    }
+
+    function triggerVibrate() { if (navigator.vibrate) navigator.vibrate(40); }
+
+    // ================= منطق الراديو اللحظي =================
+    function updateRadio() {
+        triggerVibrate();
+        const text = document.getElementById('radio-input').value.trim();
+        const role = document.getElementById('current-role').value;
+        if(text) {
+            db.ref('live_radio').set({
+                text: text,
+                sender: role,
+                time: Date.now()
+            });
+            document.getElementById('radio-input').value = "";
+        }
+    }
+
+    db.ref('live_radio').on('value', snap => {
+        const data = snap.val();
+        const display = document.getElementById('radio-display');
+        if(data) {
+            display.innerHTML = `
+                <span class="live-pulse"></span> <b>${data.sender}</b> بيسمع دلوقتي:<br>
+                <span style="color:var(--hacker-green); font-weight:bold; font-size:1.1rem; display:block; margin-top:5px;">${data.text}</span>
+            `;
+        } else {
+            display.innerText = "محدش بيسمع حاجة حالياً 🔇";
+        }
+    });
+
+    // ================= منطق الأفلام والمطابقة =================
+    function addMovie(user) {
+        triggerVibrate();
+        const inputId = user === 'y' ? 'y-movie-in' : 'm-movie-in';
+        const name = document.getElementById(inputId).value.trim();
+        if(name) {
+            // حفظ الفيلم بحروف صغيرة لمطابقة أدق بدون مشاكل السبيس أو الحروف
+            db.ref(`movie_matcher/${user}`).push({
+                name: name,
+                cleanName: name.toLowerCase().replace(/\s+/g, '')
+            });
+            document.getElementById(inputId).value = "";
+        }
+    }
+
+    function deleteMovie(user, key) {
+        triggerVibrate();
+        db.ref(`movie_matcher/${user}/${key}`).remove();
+    }
+
+    // الاستماع لقوائم الأفلام وحساب الـ Match
+    let yMovies = {}, mMovies = {};
+
+    db.ref('movie_matcher').on('value', snap => {
+        const data = snap.val() || { y: {}, m: {} };
+        yMovies = data.y || {};
+        mMovies = data.m || {};
+
+        const yList = document.getElementById('y-movies-list');
+        const mList = document.getElementById('m-movies-list');
+        const myRole = document.getElementById('current-role').value;
+
+        // تجميع الأسماء النظيفة للمطابقة
+        const yCleanNames = Object.values(yMovies).map(m => m.cleanName);
+        const mCleanNames = Object.values(mMovies).map(m => m.cleanName);
+
+        // إيجاد الفيلم المشترك
+        const matches = yCleanNames.filter(name => mCleanNames.includes(name));
+
+        // إظهار أو إخفاء صندوق التنبيه بالمطابقة
+        const matchBox = document.getElementById('match-box');
+        if(matches.length > 0) {
+            // هنجيب الاسم الأصلي للفيلم المتطابق من الداتا بيز
+            const matchedMovieObj = Object.values(yMovies).find(m => m.cleanName === matches[0]);
+            document.getElementById('match-movie-name').innerText = matchedMovieObj.name;
+            matchBox.style.display = "block";
+        } else {
+            matchBox.style.display = "none";
+        }
+
+        // رندر قائمة يوسف
+        yList.innerHTML = "";
+        Object.keys(yMovies).forEach(key => {
+            const m = yMovies[key];
+            const isMatched = mCleanNames.includes(m.cleanName);
+            const div = document.createElement('div');
+            div.className = `movie-item ${isMatched ? 'matched' : ''}`;
+            div.innerHTML = `
+                <span>🍿 ${m.name} ${isMatched ? '<b>(متطابق!)</b>' : ''}</span>
+                ${myRole === 'يوسف' ? `<i class="fas fa-trash" onclick="deleteMovie('y', '${key}')"></i>` : ''}
+            `;
+            yList.appendChild(div);
+        });
+
+        // رندر قائمة مريم
+        mList.innerHTML = "";
+        Object.keys(mMovies).forEach(key => {
+            const m = mMovies[key];
+            const isMatched = yCleanNames.includes(m.cleanName);
+            const div = document.createElement('div');
+            div.className = `movie-item ${isMatched ? 'matched' : ''}`;
+            div.innerHTML = `
+                <span>🍿 ${m.name} ${isMatched ? '<b>(متطابق!)</b>' : ''}</span>
+                ${myRole === 'مريم' ? `<i class="fas fa-trash" onclick="deleteMovie('m', '${key}')"></i>` : ''}
+            `;
+            mList.appendChild(div);
+        });
+    });
+</script>
+</body>
+</html>
