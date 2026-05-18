@@ -42,7 +42,15 @@
             user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
+            transition: background 0.5s ease;
         }
+
+        /* أنماط الخلفيات الشخصية المتاحة */
+        body.theme-default { background: radial-gradient(circle at 20% 20%, #1a1c25 0%, var(--dark-bg) 50%); }
+        body.theme-pure-dark { background: #050507; }
+        body.theme-hacker { background: radial-gradient(circle at bottom, #001a08 0%, #020203 80%); }
+        body.theme-nurse { background: radial-gradient(circle at top, #200408 0%, #050203 80%); }
+        body.theme-romantic { background: linear-gradient(135deg, #1f1115 0%, #0a0608 100%); }
 
         ::-webkit-scrollbar { display: none; }
 
@@ -85,7 +93,7 @@
         .section.active { display: block; animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
-        #chat-box, #wish-list, #dynamic-tasks-m, #dynamic-tasks-y, #memories-list { height: 320px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 25px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--glass-border); scroll-behavior: smooth; }
+        #chat-box, #wish-list, #dynamic-tasks-m, #dynamic-tasks-y, #memories-list, #music-list { height: 320px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 25px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--glass-border); scroll-behavior: smooth; }
         #memories-list { height: 400px; }
         .msg { padding: 10px 15px; border-radius: 18px; max-width: 85%; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; position: relative; }
         .msg.يوسف { align-self: flex-end; background: #00331a; color: var(--hacker-green); border-bottom-right-radius: 4px; }
@@ -140,7 +148,6 @@
         .seen-status { font-size: 0.65rem; display: block; text-align: left; opacity: 0.6; margin-top: 2px; }
         .msg.مريم .seen-status { text-align: right; }
 
-        /* تنسيقات إضافية للمهام المشطوبة والذكريات */
         .task-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: rgba(255,255,255,0.04); border-radius: 15px; border: 1px solid var(--glass-border); transition: 0.3s; }
         .task-item.completed { opacity: 0.5; background: rgba(0, 255, 136, 0.03); }
         .task-item.completed span { text-decoration: line-through; color: #888; }
@@ -151,6 +158,22 @@
         .memory-card img { width: 100%; border-radius: 20px; max-height: 250px; object-fit: cover; }
         .memory-meta { font-size: 0.75rem; color: #777; display: flex; justify-content: space-between; }
         .memory-delete { position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.6); border: none; color: var(--nurse-red); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        .music-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: rgba(255,255,255,0.04); border-radius: 15px; border: 1px solid var(--glass-border); transition: 0.3s; }
+        .music-item .music-info { display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 1; }
+        .music-item i.fa-play-circle { font-size: 1.4rem; color: var(--hacker-green); }
+        .music-item i.fa-trash-alt { color: var(--nurse-red); cursor: pointer; transition: 0.2s; }
+        .music-item i.fa-trash-alt:hover { transform: scale(1.2); }
+
+        /* ستايل أدوات التحكم في الخلفية الشخصية */
+        .theme-picker-container { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 20px; background: var(--glass-bg); padding: 10px; border-radius: 20px; border: 1px solid var(--glass-border); }
+        .theme-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .theme-dot.active { border-color: #fff; transform: scale(1.15); }
+        .td-default { background: linear-gradient(to bottom right, #1a1c25, #08090b); }
+        .td-pure-dark { background: #050507; border: 1px solid #333; }
+        .td-hacker { background: #001a08; }
+        .td-nurse { background: #200408; }
+        .td-romantic { background: #1f1115; }
     </style>
 </head>
 <body>
@@ -200,21 +223,35 @@
         <button class="tab-btn" onclick="showTab('tasks', this)">المهام</button>
         <button class="tab-btn" onclick="showTab('wishes', this)">الأمنيات</button>
         <button class="tab-btn" onclick="showTab('memories', this)">ذكرياتنا</button>
+        <button class="tab-btn" onclick="showTab('music', this)">الموسيقى</button>
         <button class="tab-btn" onclick="showTab('questions', this)">سؤال</button>
         <button class="tab-btn" onclick="showTab('chat', this)">الشات</button>
     </div>
-    <div style="text-align: center; margin-bottom: 20px;">
-        <select id="user-role" onchange="syncRole()" style="background:var(--glass-bg); color:white; border:1px solid var(--glass-border); padding:10px; border-radius:15px; font-family:'Cairo';">
-            <option value="يوسف">يوسف 🧑‍💻</option>
-            <option value="مريم">مريم 🩺</option>
-        </select>
+
+    <!-- لوحة التحكم بالهوية والخلفية المخصصة غير المشتركة -->
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+        <div style="text-align: center;">
+            <select id="user-role" onchange="syncRole()" style="background:var(--glass-bg); color:white; border:1px solid var(--glass-border); padding:10px; border-radius:15px; font-family:'Cairo'; width: 100%;">
+                <option value="يوسف">يوسف 🧑‍💻</option>
+                <option value="مريم">مريم 🩺</option>
+            </select>
+        </div>
+        
+        <div class="theme-picker-container">
+            <span style="font-size:0.75rem; color:#888; margin-left: auto;">خلفيتك الخاصة:</span>
+            <div class="theme-dot td-default active" onclick="changePersonalTheme('theme-default', this)" title="الافتراضي"></div>
+            <div class="theme-dot td-pure-dark" onclick="changePersonalTheme('theme-pure-dark', this)" title="أسود داكن"></div>
+            <div class="theme-dot td-hacker" onclick="changePersonalTheme('theme-hacker', this)" title="هكر أخضر"></div>
+            <div class="theme-dot td-nurse" onclick="changePersonalTheme('theme-nurse', this)" title="طبي أحمر"></div>
+            <div class="theme-dot td-romantic" onclick="changePersonalTheme('theme-romantic', this)" title="رومانسي دافئ"></div>
+        </div>
     </div>
+
     <div id="mood" class="section active">
-        <div class="card m-border"><h3 style="color:var(--nurse-red); margin:0; font-size:0.8rem;">مود مريم 🩺</h3><p id="m-mood-display">...</p><div id="m-mood-ctrl" class="input-group" style="display:none"><input type="text" id="m-mood-text" placeholder="مودِك دلوقتي؟"><button class="tab-btn active" onclick="updateMood('m')">تحديث</button></div></div>
+        <div class="card m-border"><h3 style="color:var(--nurse-red); margin:0; font-size:0.8rem;">مود مريم 🩺</h3><p id="m-mood-display">...</p><div id="m-mood-ctrl" class="input-group" style="display:none"><input type="text" id="m-mood-text" placeholder="مودِك دلوقتي Oz"><button class="tab-btn active" onclick="updateMood('m')">تحديث</button></div></div>
         <div class="card y-border"><h3 style="color:var(--hacker-green); margin:0; font-size:0.8rem;">مود يوسف 🧑‍💻</h3><p id="y-mood-display">...</p><div id="y-mood-ctrl" class="input-group" style="display:none"><input type="text" id="y-mood-text" placeholder="مودك دلوقتي؟"><button class="tab-btn active y-theme" onclick="updateMood('y')">تحديث</button></div></div>
     </div>
     
-    <!-- نظام المهام الديناميكي المطور -->
     <div id="tasks" class="section">
         <div class="card m-border">
             <b style="color:var(--nurse-red);">قائمة مهام مريومهع 🩺:</b>
@@ -236,16 +273,34 @@
     
     <div id="wishes" class="section"><div class="card"><h3 style="color:var(--nurse-red); margin-top:0;">صندوق الأمنيات ✨</h3><div id="wish-list"></div><div class="input-group"><input type="text" id="wish-in" placeholder="أمنية جديدة..."><button class="tab-btn active y-theme" onclick="addWish()">إضافة</button></div></div></div>
     
-    <!-- سكشن الذكريات الجديد -->
     <div id="memories" class="section">
         <div class="card">
             <h3 style="color:var(--hacker-green); margin-top:0;">صندوق ذكرياتنا الدافئة 📸</h3>
             <div id="memories-list"></div>
-            <div class="input-group" style="flex-direction: column; gap: 8px;">
-                <input type="text" id="memory-img" placeholder="رابط الصورة (URL)...">
+            <div class="input-group" style="flex-direction: column; gap: 10px;">
+                <label for="memory-file" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(0, 255, 136, 0.05); border: 1px dashed var(--hacker-green); color: var(--hacker-green); padding: 12px; border-radius: 15px; cursor: pointer; font-weight: bold; width: 100%; box-sizing: border-box;">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span id="file-label">اختر صورة من الموبايل...</span>
+                </label>
+                <input type="file" id="memory-file" accept="image/*" style="display: none;" onchange="handleFileSelect(this)">
+                
                 <div style="display:flex; gap:8px; width:100%;">
                     <input type="text" id="memory-text" placeholder="اكتب كلمة للذكرى...">
                     <button class="tab-btn active y-theme" onclick="addMemory()" style="flex:none; width:80px;">حفظ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="music" class="section">
+        <div class="card">
+            <h3 style="color:var(--hacker-green); margin-top:0;">صندوق الموسيقى المشترك 🎵</h3>
+            <div id="music-list"></div>
+            <div class="input-group" style="flex-direction: column; gap: 8px;">
+                <input type="text" id="music-name" placeholder="اسم الأغنية أو التراك...">
+                <div style="display:flex; gap:8px; width:100%;">
+                    <input type="text" id="music-link" placeholder="ضع رابط الأغنية (يوتيوب / ساوند)...">
+                    <button class="tab-btn active y-theme" onclick="addMusicTrack()" style="flex:none; width:80px;">إضافة</button>
                 </div>
             </div>
         </div>
@@ -270,6 +325,37 @@
     const firebaseConfig = { databaseURL: "https://youssef-mariam-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    // --- تخصيص خلفية الثيم الشخصي (محلياً للموبايل الحالي فقط) ---
+    function changePersonalTheme(themeClassName, dotElement) {
+        triggerVibrate(30);
+        
+        // إزالة كل كلاسات الثيم القديمة من الـ Body
+        document.body.classList.remove('theme-default', 'theme-pure-dark', 'theme-hacker', 'theme-nurse', 'theme-romantic');
+        
+        // إضافة الكلاس الجديد
+        document.body.classList.add(themeClassName);
+        
+        // حفظ الاختيار محلياً على المتصفح
+        localStorage.setItem('myPersonalTheme', themeClassName);
+        
+        // تحديث مظهر دوائر الاختيار
+        document.querySelectorAll('.theme-dot').forEach(dot => dot.classList.remove('active'));
+        if (dotElement) {
+            dotElement.classList.add('active');
+        } else {
+            const targetDot = document.querySelector(`.td-${themeClassName.replace('theme-', '')}`);
+            if (targetDot) targetDot.classList.add('active');
+        }
+    }
+
+    // استعادة الثيم المحفوظ عند فتح التطبيق
+    function loadSavedTheme() {
+        const savedTheme = localStorage.getItem('myPersonalTheme');
+        if (savedTheme) {
+            changePersonalTheme(savedTheme, null);
+        }
+    }
 
     // --- نظام الإشعارات ---
     function initNotifications() {
@@ -349,7 +435,7 @@
                     document.getElementById('main-content').style.display = 'block'; 
                     const savedRole = localStorage.getItem('myUserRole');
                     if(savedRole) document.getElementById('user-role').value = savedRole;
-                    syncRole(); updateDailyQuestion(); startLocationTracking(); 
+                    syncRole(); loadSavedTheme(); updateDailyQuestion(); startLocationTracking(); 
                 }, 400);
             }, 300);
         }
@@ -403,7 +489,6 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    // --- وظيفة الـ Sync المعدلة لإعادة ترتيب الشات فوراً ---
     function syncRole() {
         const role = document.getElementById('user-role').value;
         localStorage.setItem('myUserRole', role);
@@ -436,7 +521,7 @@
         }
     }
 
-    // --- عداد الوقت الدقيق (تم إصلاح حساب الأيام) ---
+    // --- عداد الوقت الدقيق ---
     const start = new Date("2025-04-16T00:00:00");
     setInterval(() => {
         const now = new Date();
@@ -474,7 +559,6 @@
         document.getElementById('y-mood-display').innerText = v.y; document.getElementById('m-mood-display').innerText = v.m;
     });
 
-    // --- ربط نظام المهام الديناميكي بالـ Firebase (.push) ---
     function saveTask(target) {
         triggerVibrate(); 
         const inp = target === 'm' ? 'input-to-m' : 'input-to-y';
@@ -532,17 +616,57 @@
         db.ref('wishes/'+k).update({ d: !st });
     }
 
-    // --- نظام صندوق الذكريات الجديد ---
+    // --- نظام صندوق الذكريات المطور ---
+    let base64ImageString = "";
+
+    function handleFileSelect(input) {
+        const file = input.files[0];
+        if (file) {
+            if (file.size > 1024 * 1024) {
+                alert("الصورة كبيرة جداً، يرجى اختيار صورة بحجم أصغر من 1 ميجابايت.");
+                input.value = "";
+                document.getElementById('file-label').innerText = "اختر صورة من الموبايل...";
+                return;
+            }
+            
+            document.getElementById('file-label').innerText = "📸 تم اختيار: " + file.name.substring(0, 15) + "...";
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                base64ImageString = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
     function addMemory() {
         triggerVibrate();
-        const imgUrl = document.getElementById('memory-img').value.trim();
         const text = document.getElementById('memory-text').value.trim();
         const role = document.getElementById('user-role').value;
-        if(imgUrl && text) {
-            db.ref('memories').push().set({ img: imgUrl, txt: text, sender: role, time: Date.now() });
-            document.getElementById('memory-img').value = "";
-            document.getElementById('memory-text').value = "";
+        
+        if (!base64ImageString) {
+            alert("من فضلك اختر صورة أولاً!");
+            return;
         }
+        if (!text) {
+            alert("من فضلك اكتب كلمة للذكرى!");
+            return;
+        }
+
+        db.ref('memories').push().set({ 
+            img: base64ImageString, 
+            txt: text, 
+            sender: role, 
+            time: Date.now() 
+        }).then(() => {
+            base64ImageString = "";
+            document.getElementById('memory-file').value = "";
+            document.getElementById('memory-text').value = "";
+            document.getElementById('file-label').innerText = "اختر صورة من الموبايل...";
+        }).catch(err => {
+            console.error(err);
+            alert("حدث خطأ أثناء الحفظ.");
+        });
     }
 
     db.ref('memories').on('value', snap => {
@@ -567,6 +691,62 @@
 
     function deleteMemory(key) { if(confirm("هل تريد حذف هذه الذكرى نهائياً؟")) { triggerVibrate(); db.ref('memories/'+key).remove(); } }
 
+    // --- وظائف صندوق الموسيقى المشترك ---
+    function addMusicTrack() {
+        triggerVibrate();
+        const name = document.getElementById('music-name').value.trim();
+        let link = document.getElementById('music-link').value.trim();
+        const role = document.getElementById('user-role').value;
+
+        if(!name || !link) {
+            alert("من فضلك أدخل اسم الأغنية والرابط!");
+            return;
+        }
+        if(!link.startsWith('http://') && !link.startsWith('https://')) {
+            link = 'https://' + link;
+        }
+
+        db.ref('music_box').push().set({
+            name: name,
+            link: link,
+            sender: role,
+            time: Date.now()
+        }).then(() => {
+            document.getElementById('music-name').value = "";
+            document.getElementById('music-link').value = "";
+        });
+    }
+
+    db.ref('music_box').on('value', snap => {
+        const list = document.getElementById('music-list');
+        list.innerHTML = "";
+        const myRole = document.getElementById('user-role').value;
+        snap.forEach(child => {
+            const data = child.val();
+            const div = document.createElement('div');
+            div.className = "music-item";
+            div.innerHTML = `
+                <div class="music-info" onclick="window.open('${data.link}', '_blank'); triggerVibrate(40);">
+                    <i class="far fa-play-circle"></i>
+                    <div>
+                        <span style="font-weight:600; display:block; font-size:0.95rem;">${data.name}</span>
+                        <span style="font-size:0.7rem; color:#777;">بواسطة: ${data.sender}</span>
+                    </div>
+                </div>
+                ${data.sender === myRole ? `<i class="fas fa-trash-alt" onclick="deleteMusicTrack('${child.key}')"></i>` : ''}
+            `;
+            list.appendChild(div);
+        });
+        list.scrollTop = list.scrollHeight;
+    });
+
+    function deleteMusicTrack(key) {
+        if(confirm("هل تريد حذف هذه الأغنية من القائمة؟")) {
+            triggerVibrate();
+            db.ref('music_box/' + key).remove();
+        }
+    }
+
     const qs = ["أكثر شيء يسعدك في يومك؟", "أجمل ذكرى لنا حتى الآن؟", "إيه أكتر ذكرى من طفولتك لسه مأثرة فيك؟", "لو معاك تذكرة سفر لمكان واحد بس، هتختار تروح فين؟", "إيه هو يومك المثالي؟", "إيه أكتر كلمة بتفرحك لما تسمعها مني؟"];
     function updateDailyQuestion() {
         const index = Math.floor((new Date().setHours(0,0,0,0)/86400000)%qs.length);
@@ -578,7 +758,7 @@
         if(a.trim()) { db.ref('ans/'+r).set(a); alert("تم حفظ إجابتك السرية! 🔒"); document.getElementById('ans-in').value = ""; }
     }
 
-    // --- Chat System المطور مع الـ Real-time Reactions & Auto-Scroll Replies ---
+    // --- Chat System المطور ---
     let selectedMsgKey = null, selectedMsgText = "", selectedMsgSender = "", replyToData = null;
 
     document.getElementById('msg-input').addEventListener('input', () => {
@@ -623,7 +803,6 @@
 
     function cancelReply() { replyToData = null; document.getElementById('reply-preview').style.display = 'none'; }
 
-    // دالة الانتقال السريع للرسالة الأصلية عند الضغط على الرد
     function scrollToMessage(key) {
         const target = document.querySelector(`[data-key="${key}"]`);
         if(target) {
@@ -639,7 +818,7 @@
         if(d.s !== myRole) pushNotify("رسالة جديدة من " + d.s, d.t);
         renderMessage(snap);
     });
-    db.ref('msgs').on('child_changed', snap => { const msgDiv = document.querySelector(`[data-key="${snap.key}"]`); if (msgDiv) renderInnerMsg(msgDiv, snap.val()); });
+    db.ref('msgs').on('child_changed', snap => { const msgDiv = document.querySelector(`[data-key="${snap.key}"]`); if (msgDiv) renderInnerMsg(snap.val()); });
     db.ref('msgs').on('child_removed', snap => { const msgDiv = document.querySelector(`[data-key="${snap.key}"]`); if (msgDiv) msgDiv.remove(); });
 
     function renderInnerMsg(div, d) {
