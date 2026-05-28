@@ -205,11 +205,9 @@
     <div class="menu-item delete-item" id="menu-delete"><i class="fas fa-trash"></i> حذف</div>
 </div>
 
-<button class="nudge-btn" id="floating-heart" 
-        onmousedown="startPulse()" onmouseup="stopPulse()" 
-        ontouchstart="startPulse()" ontouchend="stopPulse()"
-        onclick="sendNudge()">
-    <i class="fas fa-heart"></i>
+<button class="nudge-btn" id="floating-paw" 
+        onclick="window.open('https://youssef7878adam.github.io/Happy-massege-Mariomty/', '_blank'); triggerVibrate(50);">
+    <i class="fas fa-paw"></i>
 </button>
 
 <div class="container" id="main-content">
@@ -506,7 +504,8 @@
 
         const activeTab = document.querySelector('.tab-btn.active');
         if(activeTab) { if(role === "يوسف") activeTab.classList.add('y-theme'); else activeTab.classList.remove('y-theme'); }
-        document.getElementById('floating-heart').style.background = (role === "يوسف") ? "var(--hacker-green)" : "var(--nurse-red)";
+        document.getElementById('floating-paw').style.background = (role === "يوسف") ? "var(--hacker-green)" : "var(--nurse-red)";
+
         if(document.getElementById('chat').classList.contains('active')) updateSeenStatus();
     }
 
